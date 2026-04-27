@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import Map3D, { type PosMonitoring } from "@/components/Map3D";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert } from "lucide-react";
+import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, Waves } from "lucide-react";
 
 // Sample hydromet monitoring stations around the Majalaya / upper Citarum basin.
 // Mountains south & east = HULU (sources of Citarum: Gunung Wayang/Malabar).
@@ -135,6 +135,13 @@ const Index = () => {
           <LegendRow color="#ef4444" title="Hulu" desc="Pegunungan / mata air (>900 mdpl)" />
           <LegendRow color="#f59e0b" title="Tengah" desc="Cekungan Majalaya (~670 mdpl)" />
           <LegendRow color="#0ea5e9" title="Hilir" desc="Baleendah & sekitarnya" />
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-sky-400/20 bg-sky-400/10 px-2.5 py-2 text-xs">
+          <Waves className="h-3.5 w-3.5 text-sky-300" />
+          <span className="text-white/80">
+            Aliran Sungai Citarum <span className="text-white/50">(animasi hulu → hilir)</span>
+          </span>
         </div>
 
         <p className="mt-3 flex items-start gap-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/70">

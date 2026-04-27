@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
+import { RIVERS } from "@/data/rivers";
 
 export type PosKategori = "hulu" | "tengah" | "hilir";
 
@@ -30,6 +31,7 @@ const KATEGORI_COLOR: Record<PosKategori, string> = {
 const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -82,6 +84,11 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             minzoom: 14,
             maxzoom: 16,
           },
+          rivers: {
+            type: "geojson",
+            data: RIVERS,
+            lineMetrics: true,
+          },
         },
         layers: [
           { id: "carto-raster", type: "raster", source: "carto-base" },
@@ -94,6 +101,59 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "hillshade-highlight-color": "#ffffff",
               "hillshade-accent-color": "#475569",
               "hillshade-exaggeration": 0.6,
+            },
+          },
+          // Soft outer glow under the river
+          {
+            id: "river-glow",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": "#38bdf8",
+              "line-blur": 6,
+              "line-opacity": 0.45,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "kelas"], "utama"], 6, 3],
+                14, ["case", ["==", ["get", "kelas"], "utama"], 16, 9],
+              ],
+            },
+          },
+          // Solid river body
+          {
+            id: "river-base",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "kelas"], "utama"], "#0284c7",
+                "#0ea5e9",
+              ],
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "kelas"], "utama"], 2.5, 1.5],
+                14, ["case", ["==", ["get", "kelas"], "utama"], 7, 4],
+              ],
+            },
+          },
+          // Animated direction dashes (hulu -> hilir)
+          {
+            id: "river-flow",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "butt", "line-join": "round" },
+            paint: {
+              "line-color": "#ffffff",
+              "line-opacity": 0.85,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 1.2,
+                14, 3,
+              ],
+              "line-dasharray": [0, 4, 3],
             },
           },
           {
@@ -199,12 +259,35 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
           .addTo(map);
       });
 
+      // Animate the river-flow dashes from hulu -> hilir
+      // Using a small set of dash patterns that "advance" along the line.
+      const dashSteps: [number, number, number, number][] = [
+        [0, 4, 3, 0],
+        [1, 4, 2, 1],
+        [2, 4, 1, 2],
+        [3, 4, 0, 3],
+      ];
+      let step = 0;
+      let lastTs = 0;
+      const tick = (ts: number) => {
+        if (ts - lastTs > 110) {
+          step = (step + 1) % dashSteps.length;
+          if (map.getLayer("river-flow")) {
+            map.setPaintProperty("river-flow", "line-dasharray", dashSteps[step]);
+          }
+          lastTs = ts;
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+
       onMapReady?.(map);
     });
 
     mapRef.current = map;
 
     return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       map.remove();
       mapRef.current = null;
     };
