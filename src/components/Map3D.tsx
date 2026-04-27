@@ -31,6 +31,7 @@ const KATEGORI_COLOR: Record<PosKategori, string> = {
 const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
