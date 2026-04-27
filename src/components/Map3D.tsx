@@ -259,12 +259,35 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
           .addTo(map);
       });
 
+      // Animate the river-flow dashes from hulu -> hilir
+      // Using a small set of dash patterns that "advance" along the line.
+      const dashSteps: [number, number, number, number][] = [
+        [0, 4, 3, 0],
+        [1, 4, 2, 1],
+        [2, 4, 1, 2],
+        [3, 4, 0, 3],
+      ];
+      let step = 0;
+      let lastTs = 0;
+      const tick = (ts: number) => {
+        if (ts - lastTs > 110) {
+          step = (step + 1) % dashSteps.length;
+          if (map.getLayer("river-flow")) {
+            map.setPaintProperty("river-flow", "line-dasharray", dashSteps[step]);
+          }
+          lastTs = ts;
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+
       onMapReady?.(map);
     });
 
     mapRef.current = map;
 
     return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       map.remove();
       mapRef.current = null;
     };
