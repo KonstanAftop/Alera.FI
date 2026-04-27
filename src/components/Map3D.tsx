@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
+import { RIVERS } from "@/data/rivers";
 
 export type PosKategori = "hulu" | "tengah" | "hilir";
 
