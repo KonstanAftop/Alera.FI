@@ -83,6 +83,11 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             minzoom: 14,
             maxzoom: 16,
           },
+          rivers: {
+            type: "geojson",
+            data: RIVERS,
+            lineMetrics: true,
+          },
         },
         layers: [
           { id: "carto-raster", type: "raster", source: "carto-base" },
@@ -95,6 +100,59 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "hillshade-highlight-color": "#ffffff",
               "hillshade-accent-color": "#475569",
               "hillshade-exaggeration": 0.6,
+            },
+          },
+          // Soft outer glow under the river
+          {
+            id: "river-glow",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": "#38bdf8",
+              "line-blur": 6,
+              "line-opacity": 0.45,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "kelas"], "utama"], 6, 3],
+                14, ["case", ["==", ["get", "kelas"], "utama"], 16, 9],
+              ],
+            },
+          },
+          // Solid river body
+          {
+            id: "river-base",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "kelas"], "utama"], "#0284c7",
+                "#0ea5e9",
+              ],
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "kelas"], "utama"], 2.5, 1.5],
+                14, ["case", ["==", ["get", "kelas"], "utama"], 7, 4],
+              ],
+            },
+          },
+          // Animated direction dashes (hulu -> hilir)
+          {
+            id: "river-flow",
+            type: "line",
+            source: "rivers",
+            layout: { "line-cap": "butt", "line-join": "round" },
+            paint: {
+              "line-color": "#ffffff",
+              "line-opacity": 0.85,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 1.2,
+                14, 3,
+              ],
+              "line-dasharray": [0, 4, 3],
             },
           },
           {
