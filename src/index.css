@@ -10,50 +10,54 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 158 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 158 84% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 158 84% 39%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Map UI */
+    --panel: 222 47% 11%;
+    --panel-foreground: 210 40% 98%;
+    --panel-glass: 222 47% 11% / 0.78;
+
+    --gradient-panel: linear-gradient(135deg, hsl(222 47% 11% / 0.85), hsl(222 47% 16% / 0.75));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --shadow-panel: 0 20px 50px -20px hsl(222 47% 6% / 0.5), 0 2px 8px hsl(222 47% 6% / 0.2);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.4);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
