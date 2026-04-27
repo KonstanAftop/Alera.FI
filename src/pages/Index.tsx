@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import Map3D, { type PosMonitoring } from "@/components/Map3D";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert } from "lucide-react";
+import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, Waves } from "lucide-react";
 
 // Sample hydromet monitoring stations around the Majalaya / upper Citarum basin.
 // Mountains south & east = HULU (sources of Citarum: Gunung Wayang/Malabar).
