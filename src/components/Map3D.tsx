@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
+import citarumGeo from "@/data/citarum.geojson?url";
 
 export type PosKategori = "hulu" | "tengah" | "hilir";
 export type PosTipe = "ARR" | "AWLR"; // ARR = curah hujan, AWLR = tinggi muka air
