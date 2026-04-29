@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
+import citarumGeo from "@/data/citarum.geojson?url";
 
 export type PosKategori = "hulu" | "tengah" | "hilir";
 export type PosTipe = "ARR" | "AWLR"; // ARR = curah hujan, AWLR = tinggi muka air
@@ -95,6 +96,10 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             minzoom: 14,
             maxzoom: 16,
           },
+          rivers: {
+            type: "geojson",
+            data: citarumGeo,
+          },
         },
         layers: [
           { id: "carto-raster", type: "raster", source: "carto-base" },
@@ -107,6 +112,63 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "hillshade-highlight-color": "#ffffff",
               "hillshade-accent-color": "#475569",
               "hillshade-exaggeration": 0.6,
+            },
+          },
+          // Soft glow under main rivers
+          {
+            id: "river-glow",
+            type: "line",
+            source: "rivers",
+            filter: ["==", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": "#38bdf8",
+              "line-blur": 6,
+              "line-opacity": 0.5,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 5, 14, 14,
+              ],
+            },
+          },
+          // Tributaries (other rivers + named streams)
+          {
+            id: "river-anak",
+            type: "line",
+            source: "rivers",
+            filter: ["!=", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "waterway"], "stream"], "#7dd3fc",
+                "#38bdf8",
+              ],
+              "line-opacity": 0.85,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "waterway"], "stream"], 0.6, 1.2],
+                14, ["case", ["==", ["get", "waterway"], "stream"], 1.8, 3.2],
+              ],
+            },
+          },
+          // Main rivers (Citarum + Cisangkuy)
+          {
+            id: "river-utama",
+            type: "line",
+            source: "rivers",
+            filter: ["==", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "is_citarum"], true], "#0369a1",
+                "#0284c7",
+              ],
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 2.5, 14, 7,
+              ],
             },
           },
           {
@@ -165,6 +227,32 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
       } catch {
         /* noop */
       }
+      // River hover popup
+      const riverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+      const riverLayers = ["river-utama", "river-anak"];
+      riverLayers.forEach((lyr) => {
+        map.on("mouseenter", lyr, () => (map.getCanvas().style.cursor = "pointer"));
+        map.on("mouseleave", lyr, () => {
+          map.getCanvas().style.cursor = "";
+          riverPopup.remove();
+        });
+        map.on("mousemove", lyr, (e) => {
+          const f = e.features?.[0];
+          if (!f) return;
+          const p = f.properties as { display?: string; name?: string; waterway?: string; kelas?: string };
+          const label = p.display || p.name || p.waterway || "Sungai";
+          riverPopup
+            .setLngLat(e.lngLat)
+            .setHTML(
+              `<div style="font-family:system-ui;font-size:12px;padding:2px 4px">
+                <strong>${label}</strong>
+                <div style="font-size:10px;color:#64748b;text-transform:capitalize">${p.waterway} · ${p.kelas}</div>
+              </div>`,
+            )
+            .addTo(map);
+        });
+      });
+
       onMapReady?.(map);
     });
 

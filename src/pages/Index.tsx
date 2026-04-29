@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import Map3D, { type PosMonitoring, type PosReading } from "@/components/Map3D";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, CloudRain, Activity, Radio } from "lucide-react";
+import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, CloudRain, Activity, Radio, Waves } from "lucide-react";
 
 // Base station definitions (without live readings).
 type PosBase = Omit<PosMonitoring, "reading">;
@@ -205,6 +205,24 @@ const Index = () => {
           <p className="font-semibold text-white/80">Jenis pos:</p>
           <LegendRow color="#ef4444" title="ARR" desc="Automatic Rain Recorder — curah hujan (mm/jam)" />
           <LegendRow color="#0ea5e9" title="AWLR" desc="Automatic Water Level Recorder — TMA (m)" />
+        </div>
+
+        <div className="mt-3 space-y-1.5 rounded-lg border border-sky-400/20 bg-sky-400/5 p-2 text-xs">
+          <p className="flex items-center gap-1.5 font-semibold text-white/80">
+            <Waves className="h-3.5 w-3.5 text-sky-300" /> Jaringan sungai (data OSM)
+          </p>
+          <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+            <span className="inline-block h-[3px] w-6 rounded-full" style={{ background: "#0369a1", boxShadow: "0 0 8px #38bdf8aa" }} />
+            Sungai Citarum
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+            <span className="inline-block h-[3px] w-6 rounded-full" style={{ background: "#0284c7" }} />
+            Anak sungai utama (Cisangkuy dll)
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+            <span className="inline-block h-[2px] w-6 rounded-full" style={{ background: "#7dd3fc" }} />
+            Anak sungai / stream
+          </div>
         </div>
 
         <div className="mt-3 space-y-1.5 text-xs">
