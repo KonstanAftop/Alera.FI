@@ -96,6 +96,10 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             minzoom: 14,
             maxzoom: 16,
           },
+          rivers: {
+            type: "geojson",
+            data: citarumGeo,
+          },
         },
         layers: [
           { id: "carto-raster", type: "raster", source: "carto-base" },
@@ -108,6 +112,63 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "hillshade-highlight-color": "#ffffff",
               "hillshade-accent-color": "#475569",
               "hillshade-exaggeration": 0.6,
+            },
+          },
+          // Soft glow under main rivers
+          {
+            id: "river-glow",
+            type: "line",
+            source: "rivers",
+            filter: ["==", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": "#38bdf8",
+              "line-blur": 6,
+              "line-opacity": 0.5,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 5, 14, 14,
+              ],
+            },
+          },
+          // Tributaries (other rivers + named streams)
+          {
+            id: "river-anak",
+            type: "line",
+            source: "rivers",
+            filter: ["!=", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "waterway"], "stream"], "#7dd3fc",
+                "#38bdf8",
+              ],
+              "line-opacity": 0.85,
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, ["case", ["==", ["get", "waterway"], "stream"], 0.6, 1.2],
+                14, ["case", ["==", ["get", "waterway"], "stream"], 1.8, 3.2],
+              ],
+            },
+          },
+          // Main rivers (Citarum + Cisangkuy)
+          {
+            id: "river-utama",
+            type: "line",
+            source: "rivers",
+            filter: ["==", ["get", "kelas"], "utama"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": [
+                "case",
+                ["==", ["get", "is_citarum"], true], "#0369a1",
+                "#0284c7",
+              ],
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 2.5, 14, 7,
+              ],
             },
           },
           {
