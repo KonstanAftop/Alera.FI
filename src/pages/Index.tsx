@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import Map3D, { type PosMonitoring, type PosReading } from "@/components/Map3D";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, CloudRain, Activity, Radio } from "lucide-react";
+import { Plus, Minus, RotateCcw, Mountain, Compass, Droplets, TriangleAlert, CloudRain, Activity, Radio, Waves } from "lucide-react";
 
 // Base station definitions (without live readings).
 type PosBase = Omit<PosMonitoring, "reading">;
