@@ -1,16 +1,27 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
-import { RIVERS } from "@/data/rivers";
 
 export type PosKategori = "hulu" | "tengah" | "hilir";
+export type PosTipe = "ARR" | "AWLR"; // ARR = curah hujan, AWLR = tinggi muka air
+
+export interface PosReading {
+  // ARR: curah hujan kumulatif 1 jam terakhir (mm)
+  // AWLR: tinggi muka air saat ini (m)
+  value: number;
+  // status: normal | siaga | awas
+  status: "normal" | "siaga" | "awas";
+  updatedAt: number; // epoch ms
+}
 
 export interface PosMonitoring {
   id: string;
   nama: string;
   kategori: PosKategori;
+  tipe: PosTipe;
   lngLat: [number, number];
   elevasi?: number; // mdpl
   keterangan?: string;
+  reading?: PosReading;
 }
 
 interface Map3DProps {
@@ -19,20 +30,26 @@ interface Map3DProps {
   onPosClick?: (pos: PosMonitoring) => void;
 }
 
-// Majalaya, Kabupaten Bandung, West Java
 const MAJALAYA_CENTER: [number, number] = [107.7619, -7.0428];
 
 const KATEGORI_COLOR: Record<PosKategori, string> = {
-  hulu: "#ef4444",   // red — mountains / source
-  tengah: "#f59e0b", // amber — mid
-  hilir: "#0ea5e9",  // sky blue — downstream
+  hulu: "#ef4444",
+  tengah: "#f59e0b",
+  hilir: "#0ea5e9",
+};
+
+const STATUS_COLOR: Record<PosReading["status"], string> = {
+  normal: "#22c55e",
+  siaga: "#f59e0b",
+  awas: "#ef4444",
 };
 
 const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const markersRef = useRef<Map<string, { marker: maplibregl.Marker; el: HTMLButtonElement; popup: maplibregl.Popup }>>(new Map());
 
+  // Init map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -53,22 +70,16 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             attribution:
               '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a> · Terrain &copy; <a href="https://registry.opendata.aws/terrain-tiles/">AWS Terrain Tiles</a>',
           },
-          // AWS Terrain Tiles — Terrarium encoding (free, no key)
           terrainSource: {
             type: "raster-dem",
-            tiles: [
-              "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-            ],
+            tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
             encoding: "terrarium",
             tileSize: 256,
             maxzoom: 14,
-            attribution: "Terrain: AWS Terrain Tiles",
           },
           hillshadeSource: {
             type: "raster-dem",
-            tiles: [
-              "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-            ],
+            tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
             encoding: "terrarium",
             tileSize: 256,
             maxzoom: 14,
@@ -84,11 +95,6 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
             minzoom: 14,
             maxzoom: 16,
           },
-          rivers: {
-            type: "geojson",
-            data: RIVERS,
-            lineMetrics: true,
-          },
         },
         layers: [
           { id: "carto-raster", type: "raster", source: "carto-base" },
@@ -101,59 +107,6 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "hillshade-highlight-color": "#ffffff",
               "hillshade-accent-color": "#475569",
               "hillshade-exaggeration": 0.6,
-            },
-          },
-          // Soft outer glow under the river
-          {
-            id: "river-glow",
-            type: "line",
-            source: "rivers",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": "#38bdf8",
-              "line-blur": 6,
-              "line-opacity": 0.45,
-              "line-width": [
-                "interpolate", ["linear"], ["zoom"],
-                10, ["case", ["==", ["get", "kelas"], "utama"], 6, 3],
-                14, ["case", ["==", ["get", "kelas"], "utama"], 16, 9],
-              ],
-            },
-          },
-          // Solid river body
-          {
-            id: "river-base",
-            type: "line",
-            source: "rivers",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": [
-                "case",
-                ["==", ["get", "kelas"], "utama"], "#0284c7",
-                "#0ea5e9",
-              ],
-              "line-width": [
-                "interpolate", ["linear"], ["zoom"],
-                10, ["case", ["==", ["get", "kelas"], "utama"], 2.5, 1.5],
-                14, ["case", ["==", ["get", "kelas"], "utama"], 7, 4],
-              ],
-            },
-          },
-          // Animated direction dashes (hulu -> hilir)
-          {
-            id: "river-flow",
-            type: "line",
-            source: "rivers",
-            layout: { "line-cap": "butt", "line-join": "round" },
-            paint: {
-              "line-color": "#ffffff",
-              "line-opacity": 0.85,
-              "line-width": [
-                "interpolate", ["linear"], ["zoom"],
-                10, 1.2,
-                14, 3,
-              ],
-              "line-dasharray": [0, 4, 3],
             },
           },
           {
@@ -171,12 +124,6 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
               "fill-extrusion-base": ["coalesce", ["get", "minHeight"], 0],
               "fill-extrusion-opacity": 0.92,
             },
-          },
-          {
-            id: "sky",
-            type: "background",
-            paint: { "background-color": "#cfe6ff" },
-            layout: { visibility: "none" }, // sky added via setSky below
           },
         ],
       },
@@ -199,18 +146,12 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
       "top-right",
     );
     map.addControl(
-      new maplibregl.TerrainControl({
-        source: "terrainSource",
-        exaggeration: 1.6,
-      }),
+      new maplibregl.TerrainControl({ source: "terrainSource", exaggeration: 1.6 }),
       "top-right",
     );
 
     map.on("load", () => {
-      // Enable real 3D terrain
       map.setTerrain({ source: "terrainSource", exaggeration: 1.6 });
-
-      // Atmospheric sky (MapLibre v3+)
       try {
         map.setSky({
           "sky-color": "#9bc8ff",
@@ -222,76 +163,110 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
           "atmosphere-blend": 0.8,
         });
       } catch {
-        // older versions: ignore
+        /* noop */
       }
-
-      // Render monitoring pos markers
-      posList.forEach((pos) => {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.setAttribute("aria-label", `Pos ${pos.nama} — ${pos.kategori}`);
-        el.style.cssText = `
-          width: 28px; height: 28px; border-radius: 9999px;
-          background: ${KATEGORI_COLOR[pos.kategori]};
-          border: 3px solid white;
-          box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 4px ${KATEGORI_COLOR[pos.kategori]}33;
-          cursor: pointer; transition: transform .15s ease;
-        `;
-        el.onmouseenter = () => (el.style.transform = "scale(1.2)");
-        el.onmouseleave = () => (el.style.transform = "scale(1)");
-        el.onclick = () => onPosClick?.(pos);
-
-        const popup = new maplibregl.Popup({ offset: 22, closeButton: false }).setHTML(`
-          <div style="font-family:system-ui;min-width:180px">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${KATEGORI_COLOR[pos.kategori]}"></span>
-              <strong style="font-size:13px">${pos.nama}</strong>
-            </div>
-            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.05em">${pos.kategori}</div>
-            ${pos.elevasi != null ? `<div style="font-size:12px;color:#0f172a;margin-top:4px">Elevasi: <strong>${pos.elevasi} mdpl</strong></div>` : ""}
-            ${pos.keterangan ? `<div style="font-size:11px;color:#64748b;margin-top:4px">${pos.keterangan}</div>` : ""}
-          </div>
-        `);
-
-        new maplibregl.Marker({ element: el })
-          .setLngLat(pos.lngLat)
-          .setPopup(popup)
-          .addTo(map);
-      });
-
-      // Animate the river-flow dashes from hulu -> hilir
-      // Using a small set of dash patterns that "advance" along the line.
-      const dashSteps: [number, number, number, number][] = [
-        [0, 4, 3, 0],
-        [1, 4, 2, 1],
-        [2, 4, 1, 2],
-        [3, 4, 0, 3],
-      ];
-      let step = 0;
-      let lastTs = 0;
-      const tick = (ts: number) => {
-        if (ts - lastTs > 110) {
-          step = (step + 1) % dashSteps.length;
-          if (map.getLayer("river-flow")) {
-            map.setPaintProperty("river-flow", "line-dasharray", dashSteps[step]);
-          }
-          lastTs = ts;
-        }
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      rafRef.current = requestAnimationFrame(tick);
-
       onMapReady?.(map);
     });
 
     mapRef.current = map;
 
     return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      markersRef.current.forEach((m) => m.marker.remove());
+      markersRef.current.clear();
       map.remove();
       mapRef.current = null;
     };
-  }, [onMapReady, posList, onPosClick]);
+  }, [onMapReady]);
+
+  // Sync markers whenever posList changes (incl. realtime updates)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const apply = () => {
+      const seen = new Set<string>();
+
+      posList.forEach((pos) => {
+        seen.add(pos.id);
+        const status = pos.reading?.status ?? "normal";
+        const ringColor = STATUS_COLOR[status];
+        const kategoriColor = KATEGORI_COLOR[pos.kategori];
+        const isRain = pos.tipe === "ARR";
+
+        const valueLabel = pos.reading
+          ? isRain
+            ? `${pos.reading.value.toFixed(1)} mm/jam`
+            : `${pos.reading.value.toFixed(2)} m`
+          : "—";
+
+        const popupHtml = `
+          <div style="font-family:system-ui;min-width:200px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:9999px;background:${kategoriColor}"></span>
+              <strong style="font-size:13px">${pos.nama}</strong>
+            </div>
+            <div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.05em">
+              ${pos.tipe === "ARR" ? "Pos Curah Hujan (ARR)" : "Pos Tinggi Muka Air (AWLR)"} · ${pos.kategori}
+            </div>
+            <div style="margin-top:6px;display:flex;align-items:baseline;gap:6px">
+              <span style="font-size:18px;font-weight:700;color:#0f172a">${valueLabel}</span>
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:${ringColor}">${status}</span>
+            </div>
+            ${pos.elevasi != null ? `<div style="font-size:11px;color:#475569;margin-top:2px">Elevasi: ${pos.elevasi} mdpl</div>` : ""}
+            ${pos.keterangan ? `<div style="font-size:11px;color:#64748b;margin-top:4px">${pos.keterangan}</div>` : ""}
+            ${pos.reading ? `<div style="font-size:10px;color:#94a3b8;margin-top:6px">Update: ${new Date(pos.reading.updatedAt).toLocaleTimeString("id-ID")}</div>` : ""}
+          </div>
+        `;
+
+        const existing = markersRef.current.get(pos.id);
+        if (existing) {
+          // Update style + popup in place (no flicker, marker stays put)
+          existing.el.style.background = kategoriColor;
+          existing.el.style.boxShadow = `0 4px 14px rgba(0,0,0,.35), 0 0 0 4px ${ringColor}66, 0 0 0 8px ${ringColor}22`;
+          existing.el.dataset.status = status;
+          existing.popup.setHTML(popupHtml);
+          return;
+        }
+
+        const el = document.createElement("button");
+        el.type = "button";
+        el.setAttribute("aria-label", `Pos ${pos.nama}`);
+        el.dataset.status = status;
+        el.style.cssText = `
+          width: 30px; height: 30px; border-radius: 9999px;
+          background: ${kategoriColor};
+          border: 3px solid white;
+          box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 4px ${ringColor}66, 0 0 0 8px ${ringColor}22;
+          cursor: pointer; transition: transform .15s ease;
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;line-height:1;color:white;
+        `;
+        el.textContent = isRain ? "☂" : "≈";
+        el.onmouseenter = () => (el.style.transform = "scale(1.18)");
+        el.onmouseleave = () => (el.style.transform = "scale(1)");
+        el.onclick = () => onPosClick?.(pos);
+
+        const popup = new maplibregl.Popup({ offset: 22, closeButton: false }).setHTML(popupHtml);
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat(pos.lngLat)
+          .setPopup(popup)
+          .addTo(map);
+
+        markersRef.current.set(pos.id, { marker, el, popup });
+      });
+
+      // Remove markers no longer in list
+      markersRef.current.forEach((m, id) => {
+        if (!seen.has(id)) {
+          m.marker.remove();
+          markersRef.current.delete(id);
+        }
+      });
+    };
+
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [posList, onPosClick]);
 
   return <div ref={containerRef} className="absolute inset-0 h-full w-full" />;
 };
