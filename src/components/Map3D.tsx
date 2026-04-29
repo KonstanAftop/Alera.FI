@@ -227,6 +227,32 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
       } catch {
         /* noop */
       }
+      // River hover popup
+      const riverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+      const riverLayers = ["river-utama", "river-anak"];
+      riverLayers.forEach((lyr) => {
+        map.on("mouseenter", lyr, () => (map.getCanvas().style.cursor = "pointer"));
+        map.on("mouseleave", lyr, () => {
+          map.getCanvas().style.cursor = "";
+          riverPopup.remove();
+        });
+        map.on("mousemove", lyr, (e) => {
+          const f = e.features?.[0];
+          if (!f) return;
+          const p = f.properties as { display?: string; name?: string; waterway?: string; kelas?: string };
+          const label = p.display || p.name || p.waterway || "Sungai";
+          riverPopup
+            .setLngLat(e.lngLat)
+            .setHTML(
+              `<div style="font-family:system-ui;font-size:12px;padding:2px 4px">
+                <strong>${label}</strong>
+                <div style="font-size:10px;color:#64748b;text-transform:capitalize">${p.waterway} · ${p.kelas}</div>
+              </div>`,
+            )
+            .addTo(map);
+        });
+      });
+
       onMapReady?.(map);
     });
 
