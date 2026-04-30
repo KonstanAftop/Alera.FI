@@ -177,5 +177,5 @@ export const usePosStore = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store]);
 
-  return { posList, lastTickAt: store.lastTickAt };
+  return { posList, history: store.history, lastTickAt: store.lastTickAt };
 };
