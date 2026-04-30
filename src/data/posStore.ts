@@ -110,7 +110,7 @@ export interface PosWithTrend extends PosMonitoring {
 }
 
 const TICK_MS = 4000;
-const HISTORY_LEN = 6; // ~24s window for trend
+const HISTORY_LEN = 24; // ~96s window — cukup untuk grafik historis
 
 interface Store {
   readings: Record<string, PosReading>;
