@@ -30,12 +30,18 @@ const Index = () => {
 
   const flyToPos = useCallback((pos: PosMonitoring) => {
     setActivePos(pos);
-    mapRef.current?.flyTo({
+    const map = mapRef.current;
+    if (!map) return;
+    // In 3D, use a moderate pitch and offset the camera target slightly upward
+    // so the marker lands near the lower-center of the viewport (avoid clipping
+    // behind UI panels or off-screen at high pitch).
+    map.flyTo({
       center: pos.lngLat,
-      zoom: 13.5,
-      pitch: mode === "3d" ? 72 : 0,
-      bearing: pos.kategori === "hulu" ? 20 : pos.kategori === "hilir" ? -160 : -25,
-      duration: 1600,
+      zoom: 14,
+      pitch: mode === "3d" ? 55 : 0,
+      bearing: mode === "3d" ? -25 : 0,
+      offset: [0, 80],
+      duration: 1400,
       essential: true,
     });
   }, [mode]);
