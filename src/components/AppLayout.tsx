@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Mountain, Map as MapIcon, Table as TableIcon, BookOpen, Radio } from "lucide-react";
+import { Mountain, Map as MapIcon, Table as TableIcon, BookOpen, Radio, Droplets } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Maps", icon: MapIcon, end: true },
   { to: "/table", label: "Table", icon: TableIcon },
+  { to: "/laporkan", label: "Laporkan Banjir", icon: Droplets },
   { to: "/knowledge", label: "Knowledge", icon: BookOpen },
 ];
 

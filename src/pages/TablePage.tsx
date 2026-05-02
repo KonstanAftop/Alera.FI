@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePosStore, THRESHOLDS, type PosWithTrend, type Tren } from "@/data/posStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Sparkles, Send, AlertTriangle, Loader2,
-  History, X, Radio,
+  History, X, Radio, Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -148,6 +149,29 @@ const TablePage = () => {
   const [singleGenerating, setSingleGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [singleSending, setSingleSending] = useState(false);
+  const [autoTelegram, setAutoTelegram] = useState(false);
+  const notifiedRef = useRef<Set<string>>(new Set());
+
+  // Auto-send to telegram when a pos transitions into siaga/awas
+  useEffect(() => {
+    if (!autoTelegram) return;
+    const abnormal = posList.filter((p) => p.reading && p.reading.status !== "normal");
+    const seen = notifiedRef.current;
+    abnormal.forEach((p) => {
+      const key = `${p.id}:${p.reading?.status}`;
+      if (seen.has(key)) return;
+      // remove other status keys for this pos so a status change re-triggers
+      Array.from(seen).forEach((k) => {
+        if (k.startsWith(`${p.id}:`)) seen.delete(k);
+      });
+      seen.add(key);
+      const status = p.reading!.status.toUpperCase();
+      toast.success(`🤖 Auto-Telegram: ${p.nama}`, {
+        description: `Status ${status} · ${formatValue(p)} terkirim ke @pacu_majalaya (simulasi)`,
+      });
+    });
+  }, [posList, autoTelegram]);
+
 
   const filtered = useMemo(() => {
     return posList.filter((p) => {
@@ -239,6 +263,44 @@ const TablePage = () => {
           <span className="font-mono text-foreground">{new Date(lastTickAt).toLocaleTimeString("id-ID")}</span>
         </div>
       </header>
+
+      {/* Auto-Telegram toggle */}
+      <div
+        className={`mb-3 flex flex-wrap items-center gap-3 rounded-xl border p-3 transition-colors ${
+          autoTelegram ? "border-primary/40 bg-primary/5" : "bg-card"
+        }`}
+      >
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${autoTelegram ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+          <Bot className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            Auto-Kirim ke Telegram
+            {autoTelegram && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <Radio className="h-2.5 w-2.5 animate-pulse" /> AKTIF
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Saat aktif, setiap pos yang berubah ke <span className="font-medium text-amber-600">SIAGA</span> atau{" "}
+            <span className="font-medium text-rose-600">AWAS</span> langsung disiarkan ke channel (simulasi).
+          </p>
+        </div>
+        <Switch
+          checked={autoTelegram}
+          onCheckedChange={(v) => {
+            setAutoTelegram(v);
+            if (v) {
+              notifiedRef.current = new Set();
+              toast.success("Auto-Telegram diaktifkan");
+            } else {
+              toast("Auto-Telegram dimatikan");
+            }
+          }}
+          aria-label="Toggle auto telegram"
+        />
+      </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {(["all", "awas", "siaga", "normal"] as StatusFilter[]).map((s) => (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Minus, RotateCcw, Mountain, Compass, Droplets,
   TriangleAlert, CloudRain, Activity, Waves, ArrowUpRight, ArrowDownRight, Minus as MinusIcon,
+  ChevronDown, ChevronUp, X, Info, List,
 } from "lucide-react";
 import { usePosStore, type PosWithTrend, type Tren } from "@/data/posStore";
 
@@ -14,6 +15,10 @@ const Index = () => {
   const [bearing, setBearing] = useState(-25);
   const [activePos, setActivePos] = useState<PosMonitoring | null>(null);
   const [mode, setMode] = useState<"2d" | "3d">("3d");
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [legendVisible, setLegendVisible] = useState(true);
+  const [posPanelOpen, setPosPanelOpen] = useState(true);
+  const [posPanelVisible, setPosPanelVisible] = useState(true);
 
   const { posList, lastTickAt } = usePosStore();
 
@@ -68,92 +73,162 @@ const Index = () => {
 
       <Map3D onMapReady={handleMapReady} posList={posList} onPosClick={flyToPos} />
 
-      {/* Top-left: brand + legend */}
-      <div
-        className="pointer-events-auto absolute left-4 top-4 w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 p-4 text-panel-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl"
-        style={{ background: "var(--gradient-panel)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-primary-foreground shadow-[var(--shadow-glow)]"
-            style={{ background: "var(--gradient-accent)" }}
-          >
-            <Mountain className="h-5 w-5" />
+      {/* Top-left: brand + legend (collapsible & hideable) */}
+      {legendVisible && (
+        <div
+          className="pointer-events-auto absolute left-4 top-4 w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 text-panel-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl"
+          style={{ background: "var(--gradient-panel)" }}
+        >
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-primary-foreground shadow-[var(--shadow-glow)]"
+              style={{ background: "var(--gradient-accent)" }}
+            >
+              <Mountain className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold leading-tight">Peta Pos Pemantauan</h2>
+              <p className="text-[11px] text-white/60">DAS Citarum Hulu · Majalaya</p>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setLegendOpen((v) => !v)}
+                className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label={legendOpen ? "Minimize" : "Expand"}
+                title={legendOpen ? "Minimize" : "Expand"}
+              >
+                {legendOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setLegendVisible(false)}
+                className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label="Hide"
+                title="Sembunyikan"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base font-semibold leading-tight">Peta Pos Pemantauan</h2>
-            <p className="text-xs text-white/60">DAS Citarum Hulu · Majalaya</p>
+
+          {legendOpen && (
+            <div className="px-4 pb-4">
+              <div className="space-y-2 text-xs">
+                <p className="font-semibold text-white/80">Jenis pos:</p>
+                <LegendRow color="#ef4444" title="ARR" desc="Curah hujan (mm/jam)" />
+                <LegendRow color="#0ea5e9" title="AWLR" desc="Tinggi muka air (m)" />
+              </div>
+
+              <div className="mt-3 space-y-1.5 rounded-lg border border-sky-400/20 bg-sky-400/5 p-2 text-xs">
+                <p className="flex items-center gap-1.5 font-semibold text-white/80">
+                  <Waves className="h-3.5 w-3.5 text-sky-300" /> Jaringan sungai
+                </p>
+                <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+                  <span className="inline-block h-[3px] w-6 rounded-full" style={{ background: "#0369a1", boxShadow: "0 0 8px #38bdf8aa" }} />
+                  Sungai Citarum
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+                  <span className="inline-block h-[2px] w-6 rounded-full" style={{ background: "#7dd3fc" }} />
+                  Anak sungai
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <StatBox color="#22c55e" label="Normal" value={counts.normal} />
+                <StatBox color="#f59e0b" label="Siaga" value={counts.siaga} />
+                <StatBox color="#ef4444" label="Awas" value={counts.awas} />
+              </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-lg bg-white/5 px-2 py-1.5 text-[11px] text-white/70">
+                <span>Update terakhir</span>
+                <span className="font-mono text-white/90">
+                  {new Date(lastTickAt).toLocaleTimeString("id-ID")}
+                </span>
+              </div>
+
+              <p className="mt-3 flex items-start gap-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/70">
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+                Data simulasi (mockup) — ARR tinggi di hulu = waspada kenaikan AWLR di hilir 2–6 jam.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Right-side pos list (collapsible & hideable) */}
+      {posPanelVisible && (
+        <aside
+          className="pointer-events-auto absolute right-4 top-4 hidden w-[300px] max-h-[calc(100vh-6rem)] flex-col overflow-hidden rounded-2xl border border-white/10 text-panel-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl md:flex"
+          style={{ background: "var(--gradient-panel)", marginRight: "60px" }}
+        >
+          <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+            <Droplets className="h-4 w-4 text-accent" />
+            <h3 className="text-sm font-semibold">Pos Monitoring</h3>
+            <span className="ml-2 text-[10px] text-white/50">{posList.length} titik</span>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setPosPanelOpen((v) => !v)}
+                className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label={posPanelOpen ? "Minimize" : "Expand"}
+                title={posPanelOpen ? "Minimize" : "Expand"}
+              >
+                {posPanelOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setPosPanelVisible(false)}
+                className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label="Hide"
+                title="Sembunyikan"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
+          {posPanelOpen && (
+            <div className="flex-1 space-y-4 overflow-y-auto p-3">
+              <PosGroup
+                icon={<CloudRain className="h-3.5 w-3.5" />}
+                title="ARR — Curah Hujan"
+                unit="mm/jam"
+                items={arrList}
+                active={activePos}
+                onClick={flyToPos}
+              />
+              <PosGroup
+                icon={<Activity className="h-3.5 w-3.5" />}
+                title="AWLR — Tinggi Muka Air"
+                unit="m"
+                items={awlrList}
+                active={activePos}
+                onClick={flyToPos}
+              />
+            </div>
+          )}
+        </aside>
+      )}
 
-        <div className="mt-4 space-y-2 text-xs">
-          <p className="font-semibold text-white/80">Jenis pos:</p>
-          <LegendRow color="#ef4444" title="ARR" desc="Curah hujan (mm/jam)" />
-          <LegendRow color="#0ea5e9" title="AWLR" desc="Tinggi muka air (m)" />
+      {/* Floating launchers when panels are hidden */}
+      {(!legendVisible || !posPanelVisible) && (
+        <div className="pointer-events-auto absolute left-4 top-4 hidden flex-col gap-2 md:flex">
+          {!legendVisible && (
+            <button
+              onClick={() => { setLegendVisible(true); setLegendOpen(true); }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-[var(--shadow-panel)] backdrop-blur-xl hover:bg-white/10"
+              style={{ background: "var(--gradient-panel)" }}
+            >
+              <Info className="h-3.5 w-3.5" /> Tampilkan Legenda
+            </button>
+          )}
+          {!posPanelVisible && (
+            <button
+              onClick={() => { setPosPanelVisible(true); setPosPanelOpen(true); }}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-[var(--shadow-panel)] backdrop-blur-xl hover:bg-white/10"
+              style={{ background: "var(--gradient-panel)" }}
+            >
+              <List className="h-3.5 w-3.5" /> Tampilkan Pos Monitoring
+            </button>
+          )}
         </div>
-
-        <div className="mt-3 space-y-1.5 rounded-lg border border-sky-400/20 bg-sky-400/5 p-2 text-xs">
-          <p className="flex items-center gap-1.5 font-semibold text-white/80">
-            <Waves className="h-3.5 w-3.5 text-sky-300" /> Jaringan sungai
-          </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-white/70">
-            <span className="inline-block h-[3px] w-6 rounded-full" style={{ background: "#0369a1", boxShadow: "0 0 8px #38bdf8aa" }} />
-            Sungai Citarum
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-white/70">
-            <span className="inline-block h-[2px] w-6 rounded-full" style={{ background: "#7dd3fc" }} />
-            Anak sungai
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <StatBox color="#22c55e" label="Normal" value={counts.normal} />
-          <StatBox color="#f59e0b" label="Siaga" value={counts.siaga} />
-          <StatBox color="#ef4444" label="Awas" value={counts.awas} />
-        </div>
-
-        <div className="mt-3 flex items-center justify-between rounded-lg bg-white/5 px-2 py-1.5 text-[11px] text-white/70">
-          <span>Update terakhir</span>
-          <span className="font-mono text-white/90">
-            {new Date(lastTickAt).toLocaleTimeString("id-ID")}
-          </span>
-        </div>
-
-        <p className="mt-3 flex items-start gap-2 rounded-lg bg-white/5 p-2 text-[11px] leading-relaxed text-white/70">
-          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-          Data simulasi (mockup) — ARR tinggi di hulu = waspada kenaikan AWLR di hilir 2–6 jam.
-        </p>
-      </div>
-
-      {/* Right-side pos list */}
-      <aside
-        className="pointer-events-auto absolute right-4 top-4 hidden w-[300px] max-h-[calc(100vh-6rem)] flex-col overflow-hidden rounded-2xl border border-white/10 text-panel-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl md:flex"
-        style={{ background: "var(--gradient-panel)", marginRight: "60px" }}
-      >
-        <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-          <Droplets className="h-4 w-4 text-accent" />
-          <h3 className="text-sm font-semibold">Pos Monitoring</h3>
-          <span className="ml-auto text-[10px] text-white/50">{posList.length} titik</span>
-        </div>
-        <div className="flex-1 space-y-4 overflow-y-auto p-3">
-          <PosGroup
-            icon={<CloudRain className="h-3.5 w-3.5" />}
-            title="ARR — Curah Hujan"
-            unit="mm/jam"
-            items={arrList}
-            active={activePos}
-            onClick={flyToPos}
-          />
-          <PosGroup
-            icon={<Activity className="h-3.5 w-3.5" />}
-            title="AWLR — Tinggi Muka Air"
-            unit="m"
-            items={awlrList}
-            active={activePos}
-            onClick={flyToPos}
-          />
-        </div>
-      </aside>
+      )}
 
       {/* Custom controls */}
       <div className="pointer-events-auto absolute bottom-6 right-4 flex flex-col gap-3">

@@ -109,3 +109,18 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes posBlink {
+  0%, 100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.4) drop-shadow(0 0 8px currentColor);
+    transform: scale(1.15);
+  }
+}
+
+.pos-blink {
+  animation: posBlink 1.1s ease-in-out infinite;
+}
