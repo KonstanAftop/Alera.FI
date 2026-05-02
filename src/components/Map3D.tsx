@@ -315,6 +315,11 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
           existing.el.style.boxShadow = `0 4px 14px rgba(0,0,0,.35), 0 0 0 3px ${kategoriColor}cc, 0 0 0 7px ${ringColor}33`;
           existing.el.dataset.status = status;
           existing.el.classList.toggle("pos-blink", blink);
+          // Refresh click handler so it always uses the latest onPosClick + pos
+          existing.el.onclick = (ev) => {
+            ev.stopPropagation();
+            onPosClick?.(pos);
+          };
           existing.popup.setHTML(popupHtml);
           return;
         }
@@ -336,7 +341,10 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
         el.textContent = isRain ? "☂" : "≈";
         el.onmouseenter = () => (el.style.transform = "scale(1.18)");
         el.onmouseleave = () => (el.style.transform = "scale(1)");
-        el.onclick = () => onPosClick?.(pos);
+        el.onclick = (ev) => {
+          ev.stopPropagation();
+          onPosClick?.(pos);
+        };
 
         const popup = new maplibregl.Popup({ offset: 22, closeButton: false }).setHTML(popupHtml);
         const marker = new maplibregl.Marker({ element: el })
