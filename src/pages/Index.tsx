@@ -15,6 +15,10 @@ const Index = () => {
   const [bearing, setBearing] = useState(-25);
   const [activePos, setActivePos] = useState<PosMonitoring | null>(null);
   const [mode, setMode] = useState<"2d" | "3d">("3d");
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [legendVisible, setLegendVisible] = useState(true);
+  const [posPanelOpen, setPosPanelOpen] = useState(true);
+  const [posPanelVisible, setPosPanelVisible] = useState(true);
 
   const { posList, lastTickAt } = usePosStore();
 
