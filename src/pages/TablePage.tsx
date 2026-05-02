@@ -149,6 +149,29 @@ const TablePage = () => {
   const [singleGenerating, setSingleGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [singleSending, setSingleSending] = useState(false);
+  const [autoTelegram, setAutoTelegram] = useState(false);
+  const notifiedRef = useRef<Set<string>>(new Set());
+
+  // Auto-send to telegram when a pos transitions into siaga/awas
+  useEffect(() => {
+    if (!autoTelegram) return;
+    const abnormal = posList.filter((p) => p.reading && p.reading.status !== "normal");
+    const seen = notifiedRef.current;
+    abnormal.forEach((p) => {
+      const key = `${p.id}:${p.reading?.status}`;
+      if (seen.has(key)) return;
+      // remove other status keys for this pos so a status change re-triggers
+      Array.from(seen).forEach((k) => {
+        if (k.startsWith(`${p.id}:`)) seen.delete(k);
+      });
+      seen.add(key);
+      const status = p.reading!.status.toUpperCase();
+      toast.success(`🤖 Auto-Telegram: ${p.nama}`, {
+        description: `Status ${status} · ${formatValue(p)} terkirim ke @pacu_majalaya (simulasi)`,
+      });
+    });
+  }, [posList, autoTelegram]);
+
 
   const filtered = useMemo(() => {
     return posList.filter((p) => {
