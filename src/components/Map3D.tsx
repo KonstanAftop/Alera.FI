@@ -311,9 +311,10 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
         const existing = markersRef.current.get(pos.id);
         if (existing) {
           // Update style + popup in place (no flicker, marker stays put)
-          existing.el.style.background = kategoriColor;
-          existing.el.style.boxShadow = `0 4px 14px rgba(0,0,0,.35), 0 0 0 4px ${ringColor}66, 0 0 0 8px ${ringColor}22`;
+          existing.el.style.background = statusColor;
+          existing.el.style.boxShadow = `0 4px 14px rgba(0,0,0,.35), 0 0 0 3px ${kategoriColor}cc, 0 0 0 7px ${ringColor}33`;
           existing.el.dataset.status = status;
+          existing.el.classList.toggle("pos-blink", blink);
           existing.popup.setHTML(popupHtml);
           return;
         }
@@ -322,11 +323,12 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
         el.type = "button";
         el.setAttribute("aria-label", `Pos ${pos.nama}`);
         el.dataset.status = status;
+        el.className = blink ? "pos-marker pos-blink" : "pos-marker";
         el.style.cssText = `
           width: 30px; height: 30px; border-radius: 9999px;
-          background: ${kategoriColor};
+          background: ${statusColor};
           border: 3px solid white;
-          box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 4px ${ringColor}66, 0 0 0 8px ${ringColor}22;
+          box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 3px ${kategoriColor}cc, 0 0 0 7px ${ringColor}33;
           cursor: pointer; transition: transform .15s ease;
           display:flex;align-items:center;justify-content:center;
           font-size:13px;line-height:1;color:white;
