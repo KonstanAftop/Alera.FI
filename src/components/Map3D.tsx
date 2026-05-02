@@ -278,8 +278,10 @@ const Map3D = ({ onMapReady, posList = [], onPosClick }: Map3DProps) => {
         seen.add(pos.id);
         const status = pos.reading?.status ?? "normal";
         const ringColor = STATUS_COLOR[status];
+        const statusColor = STATUS_COLOR[status];
         const kategoriColor = KATEGORI_COLOR[pos.kategori];
         const isRain = pos.tipe === "ARR";
+        const blink = status !== "normal";
 
         const valueLabel = pos.reading
           ? isRain
