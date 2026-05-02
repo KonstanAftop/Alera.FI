@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePosStore, THRESHOLDS, type PosWithTrend, type Tren } from "@/data/posStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Sparkles, Send, AlertTriangle, Loader2,
-  History, X, Radio,
+  History, X, Radio, Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 
