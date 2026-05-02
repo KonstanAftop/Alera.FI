@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Minus, RotateCcw, Mountain, Compass, Droplets,
   TriangleAlert, CloudRain, Activity, Waves, ArrowUpRight, ArrowDownRight, Minus as MinusIcon,
-  ChevronDown, ChevronUp, X, Eye, Info, List,
+  ChevronDown, ChevronUp, X, Info, List,
 } from "lucide-react";
 import { usePosStore, type PosWithTrend, type Tren } from "@/data/posStore";
 
