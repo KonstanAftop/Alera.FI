@@ -1,23 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { usePosStore, THRESHOLDS, type PosWithTrend, type Tren } from "@/data/posStore";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
+import { useHistoricalSensorData } from "@/hooks/useHistoricalSensorData";
+import { useAuth } from "@/hooks/useAuth";
+import { THRESHOLDS } from "@/data/posStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Sparkles, Send, AlertTriangle, Loader2,
-  History, X, Radio, Bot,
+  History, X, Radio,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fetchApi } from "@/lib/api";
 
-type StatusFilter = "all" | "awas" | "siaga" | "normal";
+type StatusFilter = "all" | "siaga1" | "siaga2" | "siaga3" | "normal";
 
 const STATUS_BADGE: Record<string, string> = {
   normal: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
-  siaga: "bg-amber-500/15 text-amber-700 border-amber-500/30",
-  awas: "bg-rose-500/15 text-rose-700 border-rose-500/30",
+  siaga3: "bg-blue-500/15 text-blue-700 border-blue-500/30",
+  siaga2: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+  siaga1: "bg-rose-500/15 text-rose-700 border-rose-500/30",
 };
 
 const TrenCell = ({ tren }: { tren: Tren }) => {
@@ -35,20 +40,17 @@ const formatValue = (p: PosWithTrend) => {
 const formatRaw = (tipe: "ARR" | "AWLR", v: number) =>
   tipe === "ARR" ? `${v.toFixed(1)} mm/jam` : `${(v * 100).toFixed(0)} cm`;
 
-const formatThreshold = (p: PosWithTrend) => {
-  const t = p.tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
-  if (p.tipe === "ARR") return `Siaga ≥${t.siaga} · Awas ≥${t.awas} mm/jam`;
-  return `Siaga ≥${(t.siaga * 100).toFixed(0)} · Awas ≥${(t.awas * 100).toFixed(0)} cm`;
-};
 
 // --- Mock draft generator (multi-stasiun) ---
-const generateMockDraft = (selected: PosWithTrend[], context: string) => {
-  const awas = selected.filter((p) => p.reading?.status === "awas");
-  const siaga = selected.filter((p) => p.reading?.status === "siaga");
+const generateMockDraft = (selected: PosWithTrend[], context: string, communityName: string = "Alera FI", managedArea: string = "") => {
+  const siaga1 = selected.filter((p) => p.reading?.status === "siaga1");
+  const siaga2 = selected.filter((p) => p.reading?.status === "siaga2");
+  const siaga3 = selected.filter((p) => p.reading?.status === "siaga3");
   const naik = selected.filter((p) => p.tren === "naik");
-  const tingkat = awas.length > 0 ? "AWAS" : siaga.length > 0 ? "SIAGA" : "INFORMASI";
+  const tingkat = siaga1.length > 0 ? "SIAGA 1" : siaga2.length > 0 ? "SIAGA 2" : siaga3.length > 0 ? "SIAGA 3" : "INFORMASI";
   const lines: string[] = [];
-  lines.push("⚠️ PERINGATAN RESMI PACU MAJALAYA");
+  const areaStr = managedArea ? ` - Wilayah ${managedArea}` : "";
+  lines.push(`⚠️ PERINGATAN RESMI ${communityName.toUpperCase()}${areaStr}`);
   lines.push("");
   lines.push(`Status: ${tingkat}`);
   lines.push(`Waktu: ${new Date().toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}`);
@@ -58,53 +60,73 @@ const generateMockDraft = (selected: PosWithTrend[], context: string) => {
     lines.push(`• ${p.nama} (${p.kategori}) — ${formatValue(p)} — ${p.reading?.status?.toUpperCase()} — tren ${p.tren}`);
   });
   lines.push("");
-  if (awas.length > 0) lines.push(`🚨 ${awas.length} pos berstatus AWAS. Warga di bantaran sungai diminta SIAP EVAKUASI.`);
-  else if (siaga.length > 0) lines.push(`⚠️ ${siaga.length} pos berstatus SIAGA. Pantau perkembangan & siapkan barang penting.`);
-  if (naik.length > 0 && awas.length === 0) lines.push(`📈 ${naik.length} pos menunjukkan tren NAIK — kewaspadaan ditingkatkan.`);
+  if (siaga1.length > 0) lines.push(`🚨 ${siaga1.length} pos berstatus SIAGA 1. Warga di bantaran sungai diminta SIAP EVAKUASI.`);
+  else if (siaga2.length > 0) lines.push(`⚠️ ${siaga2.length} pos berstatus SIAGA 2. Pantau perkembangan & siapkan barang penting.`);
+  else if (siaga3.length > 0) lines.push(`📘 ${siaga3.length} pos berstatus SIAGA 3. Waspadai perkembangan cuaca.`);
+  if (naik.length > 0 && siaga1.length === 0) lines.push(`📈 ${naik.length} pos menunjukkan tren NAIK — kewaspadaan ditingkatkan.`);
   if (context.trim()) { lines.push(""); lines.push("Catatan lapangan:"); lines.push(context.trim()); }
   lines.push("");
-  lines.push("Tetap tenang & ikuti arahan petugas. — Tim PACU Majalaya");
+  lines.push(`Tetap tenang & ikuti arahan petugas. — Tim ${communityName}`);
   return lines.join("\n");
 };
 
-// --- Mock draft generator (1 stasiun, fokus historis) ---
-const generateSingleDraft = (p: PosWithTrend, hist: number[], context: string) => {
-  const status = p.reading?.status ?? "normal";
-  const tingkat = status === "awas" ? "AWAS" : status === "siaga" ? "SIAGA" : "INFORMASI";
-  const min = hist.length ? Math.min(...hist) : p.reading?.value ?? 0;
-  const max = hist.length ? Math.max(...hist) : p.reading?.value ?? 0;
-  const first = hist[0] ?? p.reading?.value ?? 0;
-  const last = hist[hist.length - 1] ?? p.reading?.value ?? 0;
-  const delta = last - first;
-  const arah = Math.abs(delta) < (p.tipe === "ARR" ? 1 : 0.05) ? "stabil" : delta > 0 ? "naik" : "turun";
+// --- Draft generator with real historical data (1 stasiun, fokus historis) ---
+interface HistoricalPoint {
+  value: number;
+  measured_at: string;
+  warning_level: number;
+}
 
+const getStatusEmoji = (tipe: "ARR" | "AWLR", val: number) => {
+  const t = tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
+  if (val >= t.siaga1) return "🔴";
+  if (val >= t.siaga2) return "🟡";
+  if (val >= t.siaga3) return "🔵";
+  return "🟢";
+};
+
+const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], context: string, communityName: string = "Alera FI") => {
   const lines: string[] = [];
-  lines.push("⚠️ PERINGATAN RESMI PACU MAJALAYA");
+  lines.push(`📊 LAPORAN HISTORIS (3 JAM): ${p.nama}`);
+  lines.push(`Lokasi: ${p.kategori.toUpperCase()}`);
+  
+  // Use actual timestamp from most recent data point
+  const latestTime = fullHistData.length > 0 ? new Date(fullHistData[fullHistData.length - 1].measured_at) : new Date();
+  lines.push(`Waktu: ${latestTime.toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}`);
   lines.push("");
-  lines.push(`Status: ${tingkat} — ${p.nama}`);
-  lines.push(`Lokasi: ${p.kategori.toUpperCase()} · ${p.elevasi} mdpl`);
-  lines.push(`Waktu laporan: ${new Date().toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}`);
-  lines.push("");
-  lines.push(`Nilai sekarang : ${formatValue(p)}`);
-  lines.push(`Rentang ${hist.length} pembacaan terakhir:`);
-  lines.push(`  • Minimum   : ${formatRaw(p.tipe, min)}`);
-  lines.push(`  • Maksimum  : ${formatRaw(p.tipe, max)}`);
-  lines.push(`  • Awal→akhir: ${formatRaw(p.tipe, first)} → ${formatRaw(p.tipe, last)} (${arah})`);
-  lines.push(`Threshold     : ${formatThreshold(p)}`);
-  lines.push("");
-  if (status === "awas") lines.push("🚨 Stasiun ini melampaui ambang AWAS. Warga di sekitar diminta SIAP EVAKUASI.");
-  else if (status === "siaga") lines.push("⚠️ Stasiun ini berstatus SIAGA. Pantau perkembangan & siapkan barang penting.");
-  else if (arah === "naik") lines.push("📈 Status normal namun tren NAIK — tetap waspada.");
-  else lines.push("ℹ️ Kondisi terpantau normal & stabil.");
+  lines.push("Tren Tinggi Muka Air:");
 
-  if (context.trim()) { lines.push(""); lines.push("Catatan lapangan:"); lines.push(context.trim()); }
+  // Sample every Nth point to show roughly hourly data, or every 5 points if fewer than 20 total
+  const sampleInterval = Math.max(1, Math.floor(fullHistData.length / 6));
+  for (let i = fullHistData.length - 1; i >= 0; i -= sampleInterval) {
+    if (i < 0) break;
+    const point = fullHistData[i];
+    const time = new Date(point.measured_at);
+    const hours = String(time.getUTCHours()).padStart(2, '0');
+    const minutes = String(time.getUTCMinutes()).padStart(2, '0');
+    const timeStr = `${hours}:${minutes}`;
+    const emoji = getStatusEmoji(p.tipe, Number(point.value));
+    const formattedValue = formatRaw(p.tipe, Number(point.value));
+    lines.push(`${timeStr} -> ${formattedValue} ${emoji}`);
+  }
+
   lines.push("");
-  lines.push(`— Pos ${p.nama} · Tim PACU Majalaya`);
+  lines.push(`Status Saat Ini : ${p.reading?.status?.toUpperCase() ?? "NORMAL"}`);
+  lines.push(`Kecenderungan   : ${p.tren.toUpperCase()}`);
+  
+  if (context.trim()) {
+    lines.push("");
+    lines.push("Catatan Lapangan:");
+    lines.push(context.trim());
+  }
+  
+  lines.push("");
+  lines.push(`— Pos ${p.nama} · Tim ${communityName}`);
   return lines.join("\n");
 };
 
 // --- Sparkline ---
-const Sparkline = ({ values, tipe }: { values: number[]; tipe: "ARR" | "AWLR" }) => {
+const Sparkline = ({ values, tipe, height = 120 }: { values: number[]; tipe: "ARR" | "AWLR"; height?: number }) => {
   if (values.length < 2) return <div className="text-xs text-muted-foreground">Belum cukup data historis…</div>;
   const w = 560, h = 120, pad = 8;
   const min = Math.min(...values);
@@ -119,9 +141,9 @@ const Sparkline = ({ values, tipe }: { values: number[]; tipe: "ARR" | "AWLR" })
   const t = tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
   const yFor = (val: number) => h - pad - ((val - min) / range) * (h - pad * 2);
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-32 w-full">
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: height }}>
       {/* threshold lines if in range */}
-      {[{ v: t.siaga, c: "hsl(38 92% 50%)", label: "Siaga" }, { v: t.awas, c: "hsl(0 84% 60%)", label: "Awas" }].map((th) =>
+      {[{ v: t.siaga3, c: "hsl(217 91% 60%)", label: "S3" }, { v: t.siaga2, c: "hsl(38 92% 50%)", label: "S2" }, { v: t.siaga1, c: "hsl(0 84% 60%)", label: "S1" }].map((th) =>
         th.v >= min && th.v <= max ? (
           <g key={th.label}>
             <line x1={pad} x2={w - pad} y1={yFor(th.v)} y2={yFor(th.v)} stroke={th.c} strokeDasharray="4 4" strokeWidth={1} opacity={0.6} />
@@ -136,7 +158,9 @@ const Sparkline = ({ values, tipe }: { values: number[]; tipe: "ARR" | "AWLR" })
 };
 
 const TablePage = () => {
-  const { posList, history, lastTickAt } = usePosStore();
+  const { posList, loading, error } = useSensorData();
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -149,29 +173,32 @@ const TablePage = () => {
   const [singleGenerating, setSingleGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [singleSending, setSingleSending] = useState(false);
-  const [autoTelegram, setAutoTelegram] = useState(false);
-  const notifiedRef = useRef<Set<string>>(new Set());
+  
+  // Telegram requirement check for community users
+  const isCommunityUser = user?.role === "community";
+  const isTelegramConnected = user?.telegramLinked === true;
+  const canGenerateDraft = !isCommunityUser || isTelegramConnected;
 
-  // Auto-send to telegram when a pos transitions into siaga/awas
   useEffect(() => {
-    if (!autoTelegram) return;
-    const abnormal = posList.filter((p) => p.reading && p.reading.status !== "normal");
-    const seen = notifiedRef.current;
-    abnormal.forEach((p) => {
-      const key = `${p.id}:${p.reading?.status}`;
-      if (seen.has(key)) return;
-      // remove other status keys for this pos so a status change re-triggers
-      Array.from(seen).forEach((k) => {
-        if (k.startsWith(`${p.id}:`)) seen.delete(k);
-      });
-      seen.add(key);
-      const status = p.reading!.status.toUpperCase();
-      toast.success(`🤖 Auto-Telegram: ${p.nama}`, {
-        description: `Status ${status} · ${formatValue(p)} terkirim ke @pacu_majalaya (simulasi)`,
-      });
-    });
-  }, [posList, autoTelegram]);
+    if (user?.role === "community") {
+      refreshUser();
+    }
+  }, [user?.role, refreshUser]);
 
+  const sendTelegramBroadcast = async (message: string) => {
+    if (!user?.id) throw new Error("Sesi tidak valid");
+    const data = await fetchApi<{ status: string; message?: string }>(
+      "/telegram/broadcast",
+      {
+        method: "POST",
+        body: JSON.stringify({ user_id: user.id, message }),
+      },
+    );
+    if (data.status !== "success") {
+      throw new Error(data.message || "Gagal mengirim pesan");
+    }
+    return data;
+  };
 
   const filtered = useMemo(() => {
     return posList.filter((p) => {
@@ -182,14 +209,14 @@ const TablePage = () => {
   }, [posList, statusFilter, search]);
 
   const counts = useMemo(() => {
-    const c = { all: posList.length, awas: 0, siaga: 0, normal: 0 };
+    const c = { all: posList.length, siaga1: 0, siaga2: 0, siaga3: 0, normal: 0 };
     posList.forEach((p) => { c[p.reading?.status ?? "normal"]++; });
     return c;
   }, [posList]);
 
   const selected = useMemo(() => posList.filter((p) => selectedIds.has(p.id)), [posList, selectedIds]);
   const singlePos = useMemo(() => posList.find((p) => p.id === singleId) ?? null, [posList, singleId]);
-  const singleHist = singleId ? history[singleId] ?? [] : [];
+  const { history: singleHist, fullData: singleHistData } = useHistoricalSensorData(singleId);
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
   const toggleAll = () => {
@@ -220,32 +247,75 @@ const TablePage = () => {
     if (selected.length === 0) return;
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 700));
-    setDraft(generateMockDraft(selected, context));
+    const communityName = user?.nama || "Alera FI";
+    const managedArea = user?.managedArea || "";
+    setDraft(generateMockDraft(selected, context, communityName, managedArea));
     setGenerating(false);
     toast.success("Draft peringatan dibuat", { description: "Edit dulu sebelum kirim." });
   };
   const handleSend = async () => {
     if (!draft.trim()) return;
+    if (isCommunityUser && !isTelegramConnected) {
+      toast.error("Telegram belum terhubung", { description: "Hubungkan group Telegram terlebih dahulu di Konfigurasi Telegram." });
+      return;
+    }
     setSending(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setSending(false);
-    toast.success("Pesan dikirim ke channel Telegram (simulasi)", { description: `${draft.length} karakter ke @pacu_majalaya` });
+    try {
+      if (!isCommunityUser) {
+        await new Promise((r) => setTimeout(r, 900));
+        toast.success("Pesan dikirim (simulasi)", { description: `${draft.length} karakter` });
+        return;
+      }
+      const data = await sendTelegramBroadcast(draft);
+      toast.success("Pesan dikirim ke group Telegram", {
+        description: data.message || `${draft.length} karakter`,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mengirim pesan";
+      toast.error(msg, {
+        description: "Pastikan group Telegram sudah terhubung di halaman Konfigurasi Telegram.",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleSingleGenerate = async () => {
     if (!singlePos) return;
     setSingleGenerating(true);
     await new Promise((r) => setTimeout(r, 600));
-    setSingleDraft(generateSingleDraft(singlePos, singleHist, singleContext));
+    const communityName = user?.nama || "Alera FI";
+    setSingleDraft(generateSingleDraft(singlePos, singleHistData, singleContext, communityName));
     setSingleGenerating(false);
-    toast.success(`Draft historis ${singlePos.nama} dibuat`);
+    toast.success(`Draft historis 3J ${singlePos.nama} dibuat`);
   };
   const handleSingleSend = async () => {
     if (!singleDraft.trim() || !singlePos) return;
+    if (isCommunityUser && !isTelegramConnected) {
+      toast.error("Telegram belum terhubung", { description: "Hubungkan group Telegram terlebih dahulu di Konfigurasi Telegram." });
+      return;
+    }
     setSingleSending(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setSingleSending(false);
-    toast.success("Laporan stasiun dikirim (simulasi)", { description: `${singlePos.nama} → @pacu_majalaya` });
+    try {
+      if (!isCommunityUser) {
+        await new Promise((r) => setTimeout(r, 900));
+        toast.success("Laporan stasiun dikirim (simulasi)", {
+          description: `${singlePos.nama} → Telegram`,
+        });
+        return;
+      }
+      const data = await sendTelegramBroadcast(singleDraft);
+      toast.success("Laporan stasiun dikirim ke group Telegram", {
+        description: data.message || `${singlePos.nama} → Telegram`,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mengirim laporan";
+      toast.error(msg, {
+        description: "Pastikan group Telegram sudah terhubung di halaman Konfigurasi Telegram.",
+      });
+    } finally {
+      setSingleSending(false);
+    }
   };
 
   return (
@@ -259,55 +329,19 @@ const TablePage = () => {
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <RefreshCw className="h-3.5 w-3.5 animate-spin [animation-duration:8s]" />
-          Auto-refresh tiap 10 menit · update terakhir{" "}
-          <span className="font-mono text-foreground">{new Date(lastTickAt).toLocaleTimeString("id-ID")}</span>
+          {loading ? "Memuat data…" : error ? `Error: ${error}` : "Data realtime aktif"}
         </div>
       </header>
 
-      {/* Auto-Telegram toggle */}
-      <div
-        className={`mb-3 flex flex-wrap items-center gap-3 rounded-xl border p-3 transition-colors ${
-          autoTelegram ? "border-primary/40 bg-primary/5" : "bg-card"
-        }`}
-      >
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${autoTelegram ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-          <Bot className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            Auto-Kirim ke Telegram
-            {autoTelegram && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                <Radio className="h-2.5 w-2.5 animate-pulse" /> AKTIF
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Saat aktif, setiap pos yang berubah ke <span className="font-medium text-amber-600">SIAGA</span> atau{" "}
-            <span className="font-medium text-rose-600">AWAS</span> langsung disiarkan ke channel (simulasi).
-          </p>
-        </div>
-        <Switch
-          checked={autoTelegram}
-          onCheckedChange={(v) => {
-            setAutoTelegram(v);
-            if (v) {
-              notifiedRef.current = new Set();
-              toast.success("Auto-Telegram diaktifkan");
-            } else {
-              toast("Auto-Telegram dimatikan");
-            }
-          }}
-          aria-label="Toggle auto telegram"
-        />
-      </div>
-
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {(["all", "awas", "siaga", "normal"] as StatusFilter[]).map((s) => (
-          <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize">
-            {s === "all" ? "Semua" : s} <span className="ml-1.5 opacity-60">{counts[s]}</span>
-          </Button>
-        ))}
+        {(["all", "siaga1", "siaga2", "siaga3", "normal"] as StatusFilter[]).map((s) => {
+          const label = s === "all" ? "Semua" : s === "normal" ? "Normal" : `Siaga ${s.replace("siaga", "")}`;
+          return (
+            <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize">
+              {label} <span className="ml-1.5 opacity-60">{counts[s]}</span>
+            </Button>
+          );
+        })}
         <Input placeholder="Cari nama stasiun…" value={search} onChange={(e) => setSearch(e.target.value)} className="ml-auto h-9 w-64" />
       </div>
 
@@ -322,7 +356,6 @@ const TablePage = () => {
               <TableHead>Tipe</TableHead>
               <TableHead className="text-right">Nilai</TableHead>
               <TableHead>Tren</TableHead>
-              <TableHead>Threshold</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Update</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
@@ -331,7 +364,7 @@ const TablePage = () => {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Tidak ada pos sesuai filter.</TableCell>
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">Tidak ada pos sesuai filter.</TableCell>
               </TableRow>
             )}
             {filtered.map((p) => {
@@ -342,17 +375,27 @@ const TablePage = () => {
                   <TableCell><Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggle(p.id)} aria-label={`Pilih ${p.nama}`} /></TableCell>
                   <TableCell>
                     <div className="font-medium">{p.nama}</div>
-                    <div className="text-[11px] capitalize text-muted-foreground">{p.kategori} · {p.elevasi} mdpl</div>
+                    <div className="text-[11px] capitalize text-muted-foreground">{p.kategori}</div>
                   </TableCell>
                   <TableCell><span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{p.tipe}</span></TableCell>
                   <TableCell className="text-right font-mono font-semibold">{formatValue(p)}</TableCell>
                   <TableCell><TrenCell tren={p.tren} /></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatThreshold(p)}</TableCell>
                   <TableCell>
                     <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE[status]}`}>{status}</span>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                    {p.reading ? new Date(p.reading.updatedAt).toLocaleTimeString("id-ID") : "—"}
+                    {p.reading
+                      ? (() => {
+                          const date = new Date(p.reading.updatedAt);
+                          const year = date.getUTCFullYear();
+                          const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                          const day = String(date.getUTCDate()).padStart(2, '0');
+                          const hours = String(date.getUTCHours()).padStart(2, '0');
+                          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                          const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+                          return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                        })()
+                      : "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant={isActive ? "default" : "outline"} onClick={() => openSingle(p.id)} className="h-7 gap-1 px-2 text-xs">
@@ -400,10 +443,10 @@ const TablePage = () => {
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Grafik {singleHist.length} pembacaan terakhir</span>
+                  <span>Data 3 jam terakhir{singleHist.length > 0 ? ` (${singleHist.length} titik data)` : " (belum tersedia)"}</span>
                   <span>tren: <span className="font-medium text-foreground">{singlePos.tren}</span></span>
                 </div>
-                <Sparkline values={singleHist} tipe={singlePos.tipe} />
+                {singleHist.length > 1 ? <Sparkline values={singleHist} tipe={singlePos.tipe} /> : <div className="text-xs text-muted-foreground">Belum cukup data historis…</div>}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium">Konteks tambahan (opsional)</label>
@@ -416,7 +459,7 @@ const TablePage = () => {
               </div>
               <Button onClick={handleSingleGenerate} disabled={singleGenerating} className="w-full">
                 {singleGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Generate Draft Historis
+                Buat Draft Historis
               </Button>
             </div>
 
@@ -427,7 +470,7 @@ const TablePage = () => {
                 <Textarea
                   value={singleDraft}
                   onChange={(e) => setSingleDraft(e.target.value)}
-                  placeholder="Klik Generate Draft Historis untuk membuat pesan otomatis dari data stasiun ini…"
+                  placeholder="Klik 'Buat Draft Historis' untuk menghasilkan pesan otomatis dari data stasiun ini…"
                   rows={14}
                   className="font-mono text-xs"
                 />
@@ -462,7 +505,7 @@ const TablePage = () => {
               </div>
               <Button onClick={handleGenerate} disabled={generating} className="w-full">
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Generate Draft
+                Buat Draft Peringatan
               </Button>
             </div>
             <div className="space-y-3">
@@ -471,7 +514,7 @@ const TablePage = () => {
                 <Textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Klik Generate Draft untuk membuat pesan otomatis…"
+                  placeholder="Klik 'Buat Draft' untuk menghasilkan pesan otomatis…"
                   rows={10}
                   className="font-mono text-xs"
                 />

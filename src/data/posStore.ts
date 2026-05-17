@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PosMonitoring, PosReading } from "@/components/Map3D";
+import type { PosMonitoring, PosReading, PosKategori, Tren } from "@/components/Map3D";
+export type { Tren };
 
 export type PosBase = Omit<PosMonitoring, "reading">;
 
 // Threshold definitions (mockup)
 export const THRESHOLDS = {
-  ARR: { siaga: 20, awas: 30, unit: "mm/jam" },
-  AWLR: { siaga: 2.0, awas: 2.8, unit: "m" },
+  ARR: { siaga3: 10, siaga2: 20, siaga1: 30, unit: "mm/jam" },
+  AWLR: { siaga3: 1.5, siaga2: 2.0, siaga1: 2.8, unit: "m" },
 } as const;
 
-export const POS_BASE: PosBase[] = [
+export const POS_BASE: (PosBase & { elevation: number })[] = [
   // ===== ARR (Curah Hujan) =====
   {
     id: "arr-cisanti",
@@ -17,7 +18,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "hulu",
     tipe: "ARR",
     lngLat: [107.7861, -7.2069],
-    elevasi: 1450,
+    elevation: 1540,
     keterangan: "Mata air Citarum, kaki G. Wayang.",
   },
   {
@@ -26,7 +27,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "hulu",
     tipe: "ARR",
     lngLat: [107.7503, -7.1492],
-    elevasi: 1180,
+    elevation: 1210,
     keterangan: "Daerah tangkapan air selatan.",
   },
   {
@@ -35,7 +36,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "hulu",
     tipe: "ARR",
     lngLat: [107.8211, -7.1100],
-    elevasi: 980,
+    elevation: 920,
     keterangan: "Lereng timur sub-DAS Citarum.",
   },
   {
@@ -44,7 +45,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "tengah",
     tipe: "ARR",
     lngLat: [107.7905, -7.0598],
-    elevasi: 690,
+    elevation: 745,
     keterangan: "Curah hujan wilayah tengah.",
   },
   // ===== AWLR (Tinggi Muka Air) =====
@@ -54,7 +55,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "tengah",
     tipe: "AWLR",
     lngLat: [107.7619, -7.0428],
-    elevasi: 670,
+    elevation: 662,
     keterangan: "Cekungan Majalaya — rawan banjir.",
   },
   {
@@ -63,7 +64,7 @@ export const POS_BASE: PosBase[] = [
     kategori: "hilir",
     tipe: "AWLR",
     lngLat: [107.6286, -7.0036],
-    elevasi: 655,
+    elevation: 658,
     keterangan: "Pertemuan Citarum–Cisangkuy.",
   },
   {
@@ -72,15 +73,23 @@ export const POS_BASE: PosBase[] = [
     kategori: "hilir",
     tipe: "AWLR",
     lngLat: [107.6175, -6.9836],
-    elevasi: 660,
-    keterangan: "Hilir Citarum, dekat Bandung.",
+    elevation: 655,
+    keterangan: "Hilir Citarum, Bandung.",
   },
 ];
 
 export const classifyARR = (v: number): PosReading["status"] =>
-  v >= THRESHOLDS.ARR.awas ? "awas" : v >= THRESHOLDS.ARR.siaga ? "siaga" : "normal";
+  v >= THRESHOLDS.ARR.siaga1 ? "siaga1" : v >= THRESHOLDS.ARR.siaga2 ? "siaga2" : v >= THRESHOLDS.ARR.siaga3 ? "siaga3" : "normal";
 export const classifyAWLR = (v: number): PosReading["status"] =>
-  v >= THRESHOLDS.AWLR.awas ? "awas" : v >= THRESHOLDS.AWLR.siaga ? "siaga" : "normal";
+  v >= THRESHOLDS.AWLR.siaga1 ? "siaga1" : v >= THRESHOLDS.AWLR.siaga2 ? "siaga2" : v >= THRESHOLDS.AWLR.siaga3 ? "siaga3" : "normal";
+
+// Helper: map status string to integer level (matches DB warning_level)
+export const statusToLevel = (s: PosReading["status"]): number =>
+  s === "siaga1" ? 3 : s === "siaga2" ? 2 : s === "siaga3" ? 1 : 0;
+
+// Helper: map integer level to status string
+export const levelToStatus = (l: number): PosReading["status"] =>
+  l >= 3 ? "siaga1" : l >= 2 ? "siaga2" : l >= 1 ? "siaga3" : "normal";
 
 const seedReading = (p: PosBase): PosReading => {
   if (p.tipe === "ARR") {
@@ -103,7 +112,7 @@ const stepReading = (p: PosBase, prev: PosReading): PosReading => {
   return { value: v, status: classifyAWLR(v), updatedAt: Date.now() };
 };
 
-export type Tren = "naik" | "turun" | "stabil";
+
 export interface PosWithTrend extends PosMonitoring {
   prevValue?: number;
   tren: Tren;

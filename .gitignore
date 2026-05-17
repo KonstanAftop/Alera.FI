@@ -16,9 +16,37 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+backend/venv/
+
+# Local scratch / chat exports (not source)
+history_ide.txt
+file_*.png
+
+# Optional large raw inputs (keep data/raw/.gitkeep if you use this layout)
+data/raw/*
+!data/raw/.gitkeep
+
+# macOS
+.DS_Store
+
+# Bun lockfile (project uses npm)
+bun.lockb
+
+# Placeholder tests
+src/test/example.test.ts

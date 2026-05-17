@@ -10,46 +10,48 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Alera FI Palette */
+    /* Dusk Blue: #476094, Pale Sky: #BFCFDC, Platinum: #EDEDED */
+    --background: 300 3% 93%;    /* Platinum - Light background */
+    --foreground: 221 35% 43%;    /* Dusk Blue - Dark text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;            /* White cards */
+    --card-foreground: 221 35% 43%;  /* Dusk Blue text */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 221 35% 43%;
 
-    --primary: 158 84% 39%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 158 84% 55%;
+    --primary: 221 35% 43%;       /* Dusk Blue - Primary */
+    --primary-foreground: 0 0% 100%;  /* White text on primary */
+    --primary-glow: 207 29% 81%;  /* Pale Sky glow */
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 207 29% 81%;     /* Pale Sky - Secondary */
+    --secondary-foreground: 221 35% 43%;  /* Dusk Blue on secondary */
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 207 29% 81%;         /* Pale Sky - Muted */
+    --muted-foreground: 221 35% 43%;  /* Dusk Blue muted text */
 
-    --accent: 199 89% 48%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 221 35% 43%;        /* Dusk Blue - Accent */
+    --accent-foreground: 0 0% 100%;  /* White on accent */
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 300 3% 93%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 158 84% 39%;
+    --border: 207 29% 81%;        /* Pale Sky borders */
+    --input: 207 29% 81%;
+    --ring: 221 35% 43%;          /* Dusk Blue ring */
 
     --radius: 0.75rem;
 
-    /* Map UI */
-    --panel: 222 47% 11%;
-    --panel-foreground: 210 40% 98%;
-    --panel-glass: 222 47% 11% / 0.78;
+    /* Map UI - Alera FI Theme */
+    --panel: 300 3% 93%;           /* Platinum panel */
+    --panel-foreground: 221 35% 43%;  /* Dusk Blue text */
+    --panel-glass: 207 29% 81% / 0.85; /* Pale Sky transparency */
 
-    --gradient-panel: linear-gradient(135deg, hsl(222 47% 11% / 0.85), hsl(222 47% 16% / 0.75));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    --shadow-panel: 0 20px 50px -20px hsl(222 47% 6% / 0.5), 0 2px 8px hsl(222 47% 6% / 0.2);
-    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.4);
+    --gradient-panel: linear-gradient(135deg, hsl(300 3% 93% / 0.95), hsl(207 29% 81% / 0.9));
+    --gradient-accent: linear-gradient(135deg, hsl(221 35% 43%), hsl(207 29% 81%));
+    --shadow-panel: 0 20px 50px -20px hsl(221 35% 43% / 0.1), 0 2px 8px hsl(221 35% 43% / 0.05);
+    --shadow-glow: 0 0 30px hsl(221 35% 43% / 0.3);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -62,41 +64,53 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 158 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 158 84% 55%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 222 47% 14%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 222 47% 14%;
+    --muted-foreground: 215 16% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 158 84% 39%;
+
+    /* Map UI */
+    --panel: 222 47% 11%;
+    --panel-foreground: 210 40% 98%;
+    --panel-glass: 222 47% 11% / 0.78;
+
+    --gradient-panel: linear-gradient(135deg, hsl(222 47% 11% / 0.85), hsl(222 47% 16% / 0.75));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --shadow-panel: 0 20px 50px -20px hsl(222 47% 3% / 0.5), 0 2px 8px hsl(222 47% 3% / 0.2);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.4);
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 158 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 222 47% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 158 84% 39%;
   }
 }
 
@@ -112,15 +126,15 @@ All colors MUST be HSL.
 
 @keyframes posBlink {
   0%, 100% {
-    filter: brightness(1);
+    filter: brightness(1) drop-shadow(0 0 0px currentColor);
     transform: scale(1);
   }
   50% {
-    filter: brightness(1.4) drop-shadow(0 0 8px currentColor);
-    transform: scale(1.15);
+    filter: brightness(1.7) drop-shadow(0 0 15px currentColor);
+    transform: scale(1.45);
   }
 }
 
 .pos-blink {
-  animation: posBlink 1.1s ease-in-out infinite;
+  animation: posBlink 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

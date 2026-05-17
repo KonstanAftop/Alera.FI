@@ -1,18 +1,28 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Search, Send, Trash2, Clock, Loader2, Droplets } from "lucide-react";
-import { addFloodReport, removeFloodReport, useFloodReports, LOKASI_SUGGESTIONS } from "@/data/floodReports";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { MapPin, Trash2, Clock, Loader2, Droplets } from "lucide-react";
+import { useFloodReports, addFloodReport, deleteFloodReport } from "@/hooks/useFloodReports";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const formatTime = (ts: number) => {
-  const d = new Date(ts);
+const SEVERITY_OPTIONS = [
+  { value: "low", label: "Rendah", color: "bg-emerald-500", icon: "🟢", desc: "Genangan < 30cm" },
+  { value: "medium", label: "Sedang", color: "bg-yellow-500", icon: "🟡", desc: "Genangan 30-60cm" },
+  { value: "high", label: "Tinggi", color: "bg-orange-500", icon: "🟠", desc: "Genangan 60-100cm" },
+  { value: "critical", label: "Kritis", color: "bg-red-500", icon: "🔴", desc: "Genangan > 100cm" },
+] as const;
+
+const formatTime = (isoString: string) => {
+  const d = new Date(isoString);
   return d.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
 };
 
-const timeAgo = (ts: number) => {
-  const diff = Math.floor((Date.now() - ts) / 1000);
+const timeAgo = (isoString: string) => {
+  const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
   if (diff < 60) return `${diff}d lalu`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m lalu`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}j lalu`;
@@ -20,34 +30,52 @@ const timeAgo = (ts: number) => {
 };
 
 const FloodReportPage = () => {
-  const reports = useFloodReports();
-  const [query, setQuery] = useState("");
-  const [pelapor, setPelapor] = useState("");
+  const { user } = useAuth();
+  const { reports, loading } = useFloodReports(user?.id);
+  const [lokasi, setLokasi] = useState("");
+  const [severity, setSeverity] = useState<"low" | "medium" | "high" | "critical">("medium");
   const [catatan, setCatatan] = useState("");
-  const [selectedLokasi, setSelectedLokasi] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return LOKASI_SUGGESTIONS.slice(0, 8);
-    return LOKASI_SUGGESTIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 8);
-  }, [query]);
-
-  const lokasiFinal = selectedLokasi ?? query.trim();
-
   const handleSubmit = async () => {
-    if (!lokasiFinal) {
-      toast.error("Lokasi wajib diisi", { description: "Cari atau ketik nama daerah." });
+    if (!lokasi.trim()) {
+      toast.error("Lokasi wajib diisi");
+      return;
+    }
+    if (!user?.id) {
+      toast.error("User tidak terautentikasi");
       return;
     }
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    addFloodReport({ lokasi: lokasiFinal, catatan: catatan.trim() || undefined, pelapor: pelapor.trim() || undefined });
-    setQuery("");
-    setSelectedLokasi(null);
-    setCatatan("");
-    setSubmitting(false);
-    toast.success("Laporan banjir tercatat", { description: `${lokasiFinal} · ${new Date().toLocaleTimeString("id-ID")}` });
+    try {
+      await addFloodReport({
+        community_id: user.id,
+        location_text: lokasi.trim(),
+        severity,
+        description: catatan.trim() || null,
+        image_url: null,
+      });
+      setLokasi("");
+      setCatatan("");
+      setSeverity("medium");
+      toast.success("Laporan banjir tercatat", {
+        description: `${lokasi} · ${new Date().toLocaleTimeString("id-ID")}`,
+      });
+    } catch (error: any) {
+      console.error("Error submitting report:", error);
+      toast.error("Gagal mengirim laporan", { description: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteFloodReport(id);
+      toast.success("Laporan dihapus");
+    } catch (error: any) {
+      toast.error("Gagal menghapus", { description: error.message });
+    }
   };
 
   return (
@@ -57,7 +85,7 @@ const FloodReportPage = () => {
           <Droplets className="h-6 w-6 text-primary" /> Laporkan Banjir
         </h1>
         <p className="text-sm text-muted-foreground">
-          Cari daerah terdampak, lalu kirim laporan. Setiap laporan otomatis dapat <span className="font-medium">timestamp</span>.
+          Dokumentasikan kejadian banjir di lapangan untuk monitoring tim.
         </p>
       </header>
 
@@ -65,51 +93,37 @@ const FloodReportPage = () => {
         {/* Form */}
         <div className="space-y-4 rounded-xl border bg-card p-4">
           <div>
-            <label className="mb-1 block text-xs font-medium">Daerah banjir</label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setSelectedLokasi(null);
-                }}
-                placeholder="Cari/ketik nama daerah… mis. Wangisagara"
-                className="pl-8"
-              />
-            </div>
-            {selectedLokasi && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                <MapPin className="h-3 w-3" /> {selectedLokasi}
-                <button className="ml-1 opacity-70 hover:opacity-100" onClick={() => setSelectedLokasi(null)}>×</button>
-              </div>
-            )}
-            {!selectedLokasi && matches.length > 0 && (
-              <div className="mt-2 max-h-44 overflow-y-auto rounded-md border bg-background">
-                {matches.map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => {
-                      setSelectedLokasi(l);
-                      setQuery(l);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
+            <Label className="mb-2 block text-sm font-medium">Lokasi Banjir *</Label>
+            <Input
+              value={lokasi}
+              onChange={(e) => setLokasi(e.target.value)}
+              placeholder="Mis. Kp. Wangisagara RT 02/05"
+            />
+          </div>
+          <div>
+            <Label className="mb-2 block text-sm font-medium">Tingkat Keparahan *</Label>
+            <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as any)}>
+              <div className="grid gap-2">
+                {SEVERITY_OPTIONS.map((opt) => (
+                  <div
+                    key={opt.value}
+                    className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50"
                   >
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                    {l}
-                  </button>
+                    <RadioGroupItem value={opt.value} id={opt.value} />
+                    <Label htmlFor={opt.value} className="flex flex-1 cursor-pointer items-center gap-3">
+                      <span className="text-lg">{opt.icon}</span>
+                      <div className="flex-1">
+                        <div className="font-medium">{opt.label}</div>
+                        <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                      </div>
+                    </Label>
+                  </div>
                 ))}
               </div>
-            )}
+            </RadioGroup>
           </div>
-
           <div>
-            <label className="mb-1 block text-xs font-medium">Nama pelapor (opsional)</label>
-            <Input value={pelapor} onChange={(e) => setPelapor(e.target.value)} placeholder="Mis. Pak RT 03 / Tim PACU" />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium">Catatan (opsional)</label>
+            <Label className="mb-2 block text-sm font-medium">Catatan (opsional)</Label>
             <Textarea
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
@@ -117,9 +131,8 @@ const FloodReportPage = () => {
               placeholder="Mis. Air mulai masuk rumah ±30cm, jalan utama tergenang…"
             />
           </div>
-
-          <Button onClick={handleSubmit} disabled={submitting || !lokasiFinal} className="w-full">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button onClick={handleSubmit} disabled={submitting || !lokasi.trim()} className="w-full">
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Droplets className="h-4 w-4" />}
             Kirim Laporan
           </Button>
         </div>
@@ -133,44 +146,52 @@ const FloodReportPage = () => {
             </div>
             <span className="text-xs text-muted-foreground">{reports.length} laporan</span>
           </header>
-          {reports.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : reports.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-              Belum ada laporan banjir. Kirim yang pertama dari form di samping.
+              Belum ada laporan banjir.
             </div>
           ) : (
             <ul className="divide-y">
-              {reports.map((r) => (
-                <li key={r.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span className="truncate font-medium">{r.lokasi}</span>
-                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-                          {timeAgo(r.createdAt)}
-                        </span>
+              {reports.map((r) => {
+                const severityOpt = SEVERITY_OPTIONS.find((s) => s.value === r.severity);
+                return (
+                  <li key={r.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          <span className="truncate font-medium">{r.location_text}</span>
+                          <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                            <span>{severityOpt?.icon}</span>
+                            <span>{severityOpt?.label.toUpperCase()}</span>
+                          </span>
+                        </div>
+                        {r.description && (
+                          <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>
+                        )}
+                        <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
+                          <span className="font-mono">{formatTime(r.reported_at)}</span>
+                          <span>·</span>
+                          <span>{timeAgo(r.reported_at)}</span>
+                        </div>
                       </div>
-                      {r.catatan && <p className="mt-1 text-sm text-muted-foreground">{r.catatan}</p>}
-                      <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
-                        <span className="font-mono">{formatTime(r.createdAt)}</span>
-                        {r.pelapor && <span>· oleh {r.pelapor}</span>}
-                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => handleDelete(r.id)}
+                        aria-label="Hapus laporan"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => {
-                        removeFloodReport(r.id);
-                        toast("Laporan dihapus");
-                      }}
-                      aria-label="Hapus laporan"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
