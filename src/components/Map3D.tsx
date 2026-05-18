@@ -29,6 +29,7 @@ export interface PosMonitoring {
   keterangan?: string;
   reading?: PosReading;
   tren?: Tren;
+  prevValue?: number;
 }
 
 interface Map3DProps {
@@ -49,6 +50,101 @@ const STATUS_COLOR: Record<PosReading["status"], string> = {
   siaga2: "#f59e0b",
   siaga1: "#ef4444",
 };
+
+const POS_POPUP_OPTIONS: maplibregl.PopupOptions = {
+  offset: 18,
+  closeButton: true,
+  closeOnClick: false,
+  maxWidth: "220px",
+};
+
+const STATUS_LABEL: Record<PosReading["status"], string> = {
+  normal: "Normal",
+  siaga3: "Siaga 3",
+  siaga2: "Siaga 2",
+  siaga1: "Siaga 1",
+};
+
+const KATEGORI_LABEL: Record<PosKategori, string> = {
+  hulu: "Hulu",
+  tengah: "Tengah",
+  hilir: "Hilir",
+};
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatPopupUpdatedAt(pos: PosMonitoring): string {
+  if (!pos.reading) return "—";
+  if (pos.reading.updatedAtRaw) return formatTimeWIB(pos.reading.updatedAtRaw);
+  return formatTimeWIB(new Date(pos.reading.updatedAt).toISOString());
+}
+
+function formatPopupValue(pos: PosMonitoring): string {
+  if (!pos.reading) return "—";
+  if (pos.tipe === "ARR") {
+    return `${pos.reading.value.toFixed(1)}<span style="font-size:9px;font-weight:600;color:#64748b;margin-left:2px">mm/j</span>`;
+  }
+  return `${pos.reading.value.toFixed(2)}<span style="font-size:9px;font-weight:600;color:#64748b;margin-left:2px">m</span>`;
+}
+
+function buildPosPopupHtml(pos: PosMonitoring): string {
+  const status = pos.reading?.status ?? "normal";
+  const accent = STATUS_COLOR[status];
+  const tren = pos.tren ?? "stabil";
+  const trenColor = tren === "naik" ? "#ef4444" : tren === "turun" ? "#16a34a" : "#64748b";
+  const trenLabel = tren === "naik" ? "Naik" : tren === "turun" ? "Turun" : "Stabil";
+  const trenArrow = tren === "naik" ? "↑" : tren === "turun" ? "↓" : "→";
+  const tipeLabel = pos.tipe === "ARR" ? "Curah hujan" : "Tinggi air";
+
+  let deltaHtml = "";
+  if (pos.reading && pos.prevValue != null && !Number.isNaN(pos.prevValue)) {
+    const diff = pos.reading.value - pos.prevValue;
+    if (Math.abs(diff) > 0.001) {
+      const sign = diff > 0 ? "+" : "";
+      const unit = pos.tipe === "ARR" ? " mm/j" : " m";
+      const deltaColor = diff > 0 ? "#ef4444" : "#16a34a";
+      deltaHtml = `<div style="font-size:9px;color:${deltaColor};margin-top:2px;font-weight:600">${sign}${diff.toFixed(pos.tipe === "ARR" ? 1 : 2)}${unit}</div>`;
+    }
+  }
+
+  return `
+    <div style="font-family:system-ui,-apple-system,sans-serif;width:200px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,0.14)">
+      <div style="height:3px;background:${accent}"></div>
+      <div style="padding:10px 11px 9px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:8px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:700;color:#0f172a;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(pos.nama)}">${escapeHtml(pos.nama)}</div>
+            <div style="font-size:9px;color:#64748b;margin-top:2px">${tipeLabel} · ${KATEGORI_LABEL[pos.kategori]}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:8px;font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:4px;background:${accent}1a;color:${accent};white-space:nowrap">${STATUS_LABEL[status]}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px 8px;background:#f8fafc;border-radius:7px">
+          <div>
+            <div style="font-size:8px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.03em">Nilai</div>
+            <div style="font-size:15px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:2px">${formatPopupValue(pos)}</div>
+            ${deltaHtml}
+          </div>
+          <div>
+            <div style="font-size:8px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.03em">Tren 3 jam</div>
+            <div style="font-size:13px;font-weight:700;color:${trenColor};margin-top:2px;display:flex;align-items:center;gap:2px">
+              <span style="font-size:12px;line-height:1">${trenArrow}</span>${trenLabel}
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:7px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;gap:4px">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(pos.id)}</span>
+          <span style="flex-shrink:0;font-variant-numeric:tabular-nums">${formatPopupUpdatedAt(pos)} WIB</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: Map3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -278,73 +374,11 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
       posList.forEach((pos) => {
         seen.add(pos.id);
         const status = pos.reading?.status ?? "normal";
-        const ringColor = STATUS_COLOR[status];
         const statusColor = STATUS_COLOR[status];
         const isRain = pos.tipe === "ARR";
         const blink = status !== "normal";
 
-        const valueLabel = pos.reading
-          ? isRain
-            ? `${pos.reading.value.toFixed(1)} mm/jam`
-            : `${pos.reading.value.toFixed(2)} m`
-          : "—";
-
-        const trenIcon = pos.tren === "naik" 
-          ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#ef4444"><path d="m7 17 10-10"/><path d="M7 7h10v10"/></svg>`
-          : pos.tren === "turun"
-          ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#10b981"><path d="m7 7 10 10"/><path d="M17 7v10H7"/></svg>`
-          : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#94a3b8"><path d="M5 12h14"/></svg>`;
-
-        const popupHtml = `
-          <div style="font-family:'Inter', sans-serif; min-width:280px; background:white; border-radius:12px; display:flex; overflow:hidden; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)">
-            <!-- Left Vertical Status Bar -->
-            <div style="width:6px; background:${ringColor}; flex-shrink:0;"></div>
-            
-            <div style="padding:16px; flex-grow:1;">
-              <!-- Header -->
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                <div>
-                  <h3 style="margin:0; font-size:14px; font-weight:700; color:#1e293b; line-height:1.2;">${pos.nama}</h3>
-                  <div style="font-size:10px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.025em; margin-top:2px;">
-                    ${pos.tipe === "ARR" ? "Pos Curah Hujan" : "Pos Tinggi Muka Air"}
-                  </div>
-                </div>
-                <span style="font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:4px; background:${ringColor}20; color:${ringColor}; border:1px solid ${ringColor}40;">
-                  ${status}
-                </span>
-              </div>
-
-              <!-- Main Split Content -->
-              <div style="display:grid; grid-template-columns: 1fr 1fr; border-top:1px solid #f1f5f9; padding-top:12px; gap:16px;">
-                <!-- Column 1: Reading -->
-                <div style="display:flex; flex-direction:column; gap:4px; border-right:1px solid #f1f5f9; padding-right:12px;">
-                  <span style="font-size:9px; font-weight:600; color:#94a3b8; text-transform:uppercase;">Obs Terkini</span>
-                  <div style="display:flex; align-items:baseline; gap:4px;">
-                    <span style="font-size:20px; font-weight:800; color:#0f172a;">${valueLabel.split(' ')[0]}</span>
-                    <span style="font-size:10px; font-weight:600; color:#64748b;">${valueLabel.split(' ')[1]}</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:4px; font-size:10px; color:#64748b; font-weight:500;">
-                    ${trenIcon} <span style="text-transform:capitalize;">${pos.tren || 'stabil'}</span>
-                  </div>
-                </div>
-
-                <!-- Column 2: Info -->
-                <div style="display:flex; flex-direction:column; gap:6px;">
-                  ${pos.keterangan ? `<div style="font-size:10px; color:#64748b; font-style:italic; line-height:1.3;">${pos.keterangan}</div>` : ""}
-                </div>
-              </div>
-
-              <!-- Footer -->
-              <div style="margin-top:12px; padding-top:8px; border-top:1px solid #f8fafc; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:9px; color:#94a3b8;">Ref: ${pos.id.toUpperCase()}</span>
-                <span style="font-size:9px; color:#94a3b8; display:flex; align-items:center; gap:3px;">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  ${pos.reading ? (pos.reading.updatedAtRaw ? formatTimeWIB(pos.reading.updatedAtRaw) : formatTimeWIB(new Date(pos.reading.updatedAt).toISOString())) : "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-        `;
+        const popupHtml = buildPosPopupHtml(pos);
 
         const existing = markersRef.current.get(pos.id);
         if (existing) {
@@ -354,13 +388,7 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
           existing.el.style.boxShadow = `0 4px 12px rgba(0,0,0,0.3)`;
           existing.el.dataset.status = status;
           existing.el.classList.toggle("pos-blink", blink);
-          // Refresh click handler so it always uses the latest onPosClick + pos
-          existing.el.onclick = () => {
-            onPosClickRef.current?.(pos);
-            if (!existing.popup.isOpen()) {
-              existing.marker.togglePopup();
-            }
-          };
+          existing.el.onclick = () => onPosClickRef.current?.(pos);
           existing.popup.setHTML(popupHtml);
           return;
         }
@@ -394,19 +422,14 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
         el.onmouseenter = () => (el.style.transform = "scale(1.18)");
         el.onmouseleave = () => (el.style.transform = "scale(1)");
         
-        const popup = new maplibregl.Popup({ offset: 22, closeButton: false, maxWidth: 'none' }).setHTML(popupHtml);
+        const popup = new maplibregl.Popup(POS_POPUP_OPTIONS).setHTML(popupHtml);
+        container.appendChild(el);
         const marker = new maplibregl.Marker({ element: container })
           .setLngLat(pos.lngLat)
           .setPopup(popup)
           .addTo(map);
 
-        el.onclick = () => {
-          onPosClickRef.current?.(pos);
-          if (!popup.isOpen()) {
-            marker.togglePopup();
-          }
-        };
-        container.appendChild(el);
+        el.onclick = () => onPosClickRef.current?.(pos);
 
         markersRef.current.set(pos.id, { marker, el, popup });
       });
@@ -443,7 +466,7 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
       cursor: default;
     `;
 
-    const popup = new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(`
+    const popup = new maplibregl.Popup({ ...POS_POPUP_OPTIONS, offset: 16 }).setHTML(`
       <div style="font-family:'Inter', sans-serif; padding:8px 10px; min-width:180px">
         <div style="font-size:12px; font-weight:700; color:#0f172a;">Lokasi Individu</div>
         <div style="font-size:10px; color:#475569; margin-top:2px;">${homeLabel || "Lokasi tersimpan"}</div>

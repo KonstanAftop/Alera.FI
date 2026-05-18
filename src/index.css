@@ -138,3 +138,7 @@ All colors MUST be HSL.
 .pos-blink {
   animation: posBlink 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+.maplibregl-popup {
+  z-index: 15;
+}
