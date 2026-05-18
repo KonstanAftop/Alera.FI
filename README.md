@@ -26,7 +26,7 @@ Alera FI is a comprehensive, multi-platform flood monitoring and early warning s
 |--------|-----|
 | `public/geo/` | Aset geospasial untuk web: `rivers_bandung.geojson`, `flood_risk.tiff` |
 | `scripts/` | Utilitas: `extract_rivers.py`, `test_spatial.py`, `start-dev.sh` |
-| `docs/` | Catatan konteks (`CONTEXT.md`), skema Supabase |
+| `docs/` | Konteks (`CONTEXT.md`), deploy VPS (`DEPLOYMENT.md`), skema Supabase |
 | `data/` | Opsional: input mentah (mis. shapefile); lihat `data/README.md` |
 | `backend/` | API FastAPI (`main.py`) |
 

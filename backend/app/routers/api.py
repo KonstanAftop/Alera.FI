@@ -1,4 +1,5 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 from app.core.database import get_supabase
@@ -70,7 +71,8 @@ async def get_sensor_history(sensor_id: str, hours: int = 3):
     """
     try:
         supabase = get_supabase()
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        wib = ZoneInfo("Asia/Jakarta")
+        cutoff = (datetime.now(wib) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
         
         result = supabase.table("obs_data").select(
             "value, measured_at, warning_level"

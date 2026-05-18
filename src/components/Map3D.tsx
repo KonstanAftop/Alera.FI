@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
+import { formatTimeWIB } from "@/lib/wibDatetime";
 
 /** Served from `public/geo/` (see `scripts/extract_rivers.py` to regenerate). */
 const RIVERS_GEOJSON_URL = "/geo/rivers_bandung.geojson";
@@ -14,6 +15,8 @@ export interface PosReading {
   // status: normal (0) | siaga3 (1) | siaga2 (2) | siaga1 (3)
   status: "normal" | "siaga3" | "siaga2" | "siaga1";
   updatedAt: number; // epoch ms
+  /** Raw `last_updated_at` from API (WIB naive or legacy ISO). */
+  updatedAtRaw?: string;
 }
 
 export type Tren = "naik" | "turun" | "stabil";
@@ -336,7 +339,7 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
                 <span style="font-size:9px; color:#94a3b8;">Ref: ${pos.id.toUpperCase()}</span>
                 <span style="font-size:9px; color:#94a3b8; display:flex; align-items:center; gap:3px;">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  ${pos.reading ? new Date(pos.reading.updatedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) : "-"}
+                  ${pos.reading ? (pos.reading.updatedAtRaw ? formatTimeWIB(pos.reading.updatedAtRaw) : formatTimeWIB(new Date(pos.reading.updatedAt).toISOString())) : "-"}
                 </span>
               </div>
             </div>

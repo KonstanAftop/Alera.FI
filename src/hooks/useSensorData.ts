@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchApi } from "@/lib/api";
+import { parseWIBNaiveMs } from "@/lib/wibDatetime";
 import type { PosMonitoring, PosReading, Tren } from "@/components/Map3D";
 
 export type { Tren };
@@ -67,22 +68,25 @@ export function useSensorData() {
           const kategori = deriveKategori(elevation);
           const tipe = mapTipe(meta?.sensor_type || "wl");
 
-          // Parse timestamp: if it's an ISO string, parse it; if it's already a number, use it directly
           let timestamp = Date.now();
+          let updatedAtRaw: string | undefined;
           if (row.last_updated_at) {
-            if (typeof row.last_updated_at === 'string') {
-              // Handle ISO string format (e.g., "2026-05-16T16:18:08+00:00" or "2026-05-16 16:18:08")
-              timestamp = new Date(row.last_updated_at).getTime();
-            } else if (typeof row.last_updated_at === 'number') {
-              // If already a number, check if it's in milliseconds or seconds
-              timestamp = row.last_updated_at > 9999999999 ? row.last_updated_at : row.last_updated_at * 1000;
+            if (typeof row.last_updated_at === "string") {
+              updatedAtRaw = row.last_updated_at;
+              timestamp = parseWIBNaiveMs(row.last_updated_at);
+            } else if (typeof row.last_updated_at === "number") {
+              timestamp =
+                row.last_updated_at > 9999999999
+                  ? row.last_updated_at
+                  : row.last_updated_at * 1000;
             }
           }
-          
+
           const reading: PosReading = {
             value: Number(row.current_value) || 0,
             status: levelToStatus(Number(row.current_warning_level) || 0),
             updatedAt: timestamp,
+            updatedAtRaw,
           };
 
           const tren: Tren =

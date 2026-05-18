@@ -15,6 +15,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchApi } from "@/lib/api";
+import {
+  formatDateTimeWIB,
+  formatDateTimeWIBFromMs,
+  formatTimeWIB,
+  parseWIBNaiveMs,
+} from "@/lib/wibDatetime";
 
 type StatusFilter = "all" | "siaga1" | "siaga2" | "siaga3" | "normal";
 
@@ -77,6 +83,42 @@ interface HistoricalPoint {
   warning_level: number;
 }
 
+/** 3 jam @ interval 10 menit = 18 titik */
+const HISTORY_DRAFT_RECORDS = 18;
+const HISTORY_INTERVAL_MS = 10 * 60 * 1000;
+
+/** 18 slot 10 menit terakhir; tiap slot = observasi terbaru dalam jendela itu. */
+const pickHistoryDraftPoints = (data: HistoricalPoint[]): HistoricalPoint[] => {
+  if (data.length === 0) return [];
+
+  const sorted = [...data].sort(
+    (a, b) => parseWIBNaiveMs(a.measured_at) - parseWIBNaiveMs(b.measured_at),
+  );
+  const latestMs = parseWIBNaiveMs(sorted[sorted.length - 1].measured_at);
+  const points: HistoricalPoint[] = [];
+
+  for (let i = 0; i < HISTORY_DRAFT_RECORDS; i++) {
+    const slotEnd = latestMs - (HISTORY_DRAFT_RECORDS - 1 - i) * HISTORY_INTERVAL_MS;
+    const slotStart = slotEnd - HISTORY_INTERVAL_MS;
+    const inSlot = sorted.filter((p) => {
+      const t = parseWIBNaiveMs(p.measured_at);
+      return t > slotStart && t <= slotEnd;
+    });
+    if (inSlot.length > 0) {
+      points.push(inSlot[inSlot.length - 1]);
+    } else {
+      const nearest = sorted.reduce((best, p) => {
+        const t = parseWIBNaiveMs(p.measured_at);
+        const bestT = parseWIBNaiveMs(best.measured_at);
+        return Math.abs(t - slotEnd) < Math.abs(bestT - slotEnd) ? p : best;
+      });
+      points.push(nearest);
+    }
+  }
+
+  return points;
+};
+
 const getStatusEmoji = (tipe: "ARR" | "AWLR", val: number) => {
   const t = tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
   if (val >= t.siaga1) return "🔴";
@@ -87,46 +129,61 @@ const getStatusEmoji = (tipe: "ARR" | "AWLR", val: number) => {
 
 const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], context: string, communityName: string = "Alera FI") => {
   const lines: string[] = [];
-  lines.push(`📊 LAPORAN HISTORIS (3 JAM): ${p.nama}`);
-  lines.push(`Lokasi: ${p.kategori.toUpperCase()}`);
-  
-  // Use actual timestamp from most recent data point
-  const latestTime = fullHistData.length > 0 ? new Date(fullHistData[fullHistData.length - 1].measured_at) : new Date();
-  lines.push(`Waktu: ${latestTime.toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}`);
-  lines.push("");
-  lines.push("Tren Tinggi Muka Air:");
+  const trendPoints = pickHistoryDraftPoints(fullHistData);
+  const trendLabel =
+    p.tipe === "ARR"
+      ? "Tren curah hujan (18 titik × 10 menit, 3 jam, WIB):"
+      : "Tren tinggi muka air (18 titik × 10 menit, 3 jam, WIB):";
 
-  // Sample every Nth point to show roughly hourly data, or every 5 points if fewer than 20 total
-  const sampleInterval = Math.max(1, Math.floor(fullHistData.length / 6));
-  for (let i = fullHistData.length - 1; i >= 0; i -= sampleInterval) {
-    if (i < 0) break;
-    const point = fullHistData[i];
-    const time = new Date(point.measured_at);
-    const hours = String(time.getUTCHours()).padStart(2, '0');
-    const minutes = String(time.getUTCMinutes()).padStart(2, '0');
-    const timeStr = `${hours}:${minutes}`;
-    const emoji = getStatusEmoji(p.tipe, Number(point.value));
-    const formattedValue = formatRaw(p.tipe, Number(point.value));
-    lines.push(`${timeStr} -> ${formattedValue} ${emoji}`);
+  lines.push(`📊 LAPORAN HISTORIS (3 JAM): ${p.nama}`);
+  lines.push(`Lokasi: ${p.kategori.toUpperCase()} · Tipe: ${p.tipe}`);
+
+  const waktuLaporan =
+    trendPoints.length > 0
+      ? `${formatDateTimeWIB(trendPoints[trendPoints.length - 1].measured_at)} WIB`
+      : new Date().toLocaleString("id-ID", {
+          dateStyle: "short",
+          timeStyle: "short",
+          timeZone: "Asia/Jakarta",
+        }) + " WIB";
+  lines.push(`Waktu laporan: ${waktuLaporan}`);
+  lines.push("");
+  lines.push(trendLabel);
+
+  if (trendPoints.length === 0) {
+    lines.push("Belum ada data historis 3 jam terakhir.");
+  } else {
+    for (const point of trendPoints) {
+      const timeStr = formatTimeWIB(point.measured_at);
+      const emoji = getStatusEmoji(p.tipe, Number(point.value));
+      lines.push(`${timeStr} → ${formatRaw(p.tipe, Number(point.value))} ${emoji}`);
+    }
+    const uniqueTimestamps = new Set(trendPoints.map((pt) => pt.measured_at)).size;
+    if (uniqueTimestamps < HISTORY_DRAFT_RECORDS) {
+      lines.push("");
+      lines.push(
+        `_(Hanya ${fullHistData.length} observasi di database; ${uniqueTimestamps} waktu unik dalam 18 slot.)_`,
+      );
+    }
   }
 
   lines.push("");
   lines.push(`Status Saat Ini : ${p.reading?.status?.toUpperCase() ?? "NORMAL"}`);
   lines.push(`Kecenderungan   : ${p.tren.toUpperCase()}`);
-  
+
   if (context.trim()) {
     lines.push("");
     lines.push("Catatan Lapangan:");
     lines.push(context.trim());
   }
-  
+
   lines.push("");
   lines.push(`— Pos ${p.nama} · Tim ${communityName}`);
   return lines.join("\n");
 };
 
 // --- Sparkline ---
-const Sparkline = ({ values, tipe, height = 120 }: { values: number[]; tipe: "ARR" | "AWLR"; height?: number }) => {
+const Sparkline = ({ values, height = 120 }: { values: number[]; height?: number }) => {
   if (values.length < 2) return <div className="text-xs text-muted-foreground">Belum cukup data historis…</div>;
   const w = 560, h = 120, pad = 8;
   const min = Math.min(...values);
@@ -138,19 +195,8 @@ const Sparkline = ({ values, tipe, height = 120 }: { values: number[]; tipe: "AR
     const y = h - pad - ((v - min) / range) * (h - pad * 2);
     return `${x},${y}`;
   });
-  const t = tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
-  const yFor = (val: number) => h - pad - ((val - min) / range) * (h - pad * 2);
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: height }}>
-      {/* threshold lines if in range */}
-      {[{ v: t.siaga3, c: "hsl(217 91% 60%)", label: "S3" }, { v: t.siaga2, c: "hsl(38 92% 50%)", label: "S2" }, { v: t.siaga1, c: "hsl(0 84% 60%)", label: "S1" }].map((th) =>
-        th.v >= min && th.v <= max ? (
-          <g key={th.label}>
-            <line x1={pad} x2={w - pad} y1={yFor(th.v)} y2={yFor(th.v)} stroke={th.c} strokeDasharray="4 4" strokeWidth={1} opacity={0.6} />
-            <text x={w - pad - 2} y={yFor(th.v) - 3} textAnchor="end" fontSize="9" fill={th.c}>{th.label}</text>
-          </g>
-        ) : null,
-      )}
       <polyline fill="none" stroke="hsl(var(--primary))" strokeWidth={2} points={points.join(" ")} />
       <circle cx={points[points.length - 1].split(",")[0]} cy={points[points.length - 1].split(",")[1]} r={3.5} fill="hsl(var(--primary))" />
     </svg>
@@ -385,16 +431,9 @@ const TablePage = () => {
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">
                     {p.reading
-                      ? (() => {
-                          const date = new Date(p.reading.updatedAt);
-                          const year = date.getUTCFullYear();
-                          const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                          const day = String(date.getUTCDate()).padStart(2, '0');
-                          const hours = String(date.getUTCHours()).padStart(2, '0');
-                          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-                          const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-                          return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-                        })()
+                      ? p.reading.updatedAtRaw
+                        ? formatDateTimeWIB(p.reading.updatedAtRaw)
+                        : formatDateTimeWIBFromMs(p.reading.updatedAt)
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -443,10 +482,15 @@ const TablePage = () => {
               </div>
               <div>
                 <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Data 3 jam terakhir{singleHist.length > 0 ? ` (${singleHist.length} titik data)` : " (belum tersedia)"}</span>
+                  <span>
+                    Data 3 jam terakhir
+                    {singleHist.length > 0
+                      ? ` (${singleHist.length} titik · draf: 18 interval 10 menit WIB)`
+                      : " (belum tersedia)"}
+                  </span>
                   <span>tren: <span className="font-medium text-foreground">{singlePos.tren}</span></span>
                 </div>
-                {singleHist.length > 1 ? <Sparkline values={singleHist} tipe={singlePos.tipe} /> : <div className="text-xs text-muted-foreground">Belum cukup data historis…</div>}
+                {singleHist.length > 1 ? <Sparkline values={singleHist} /> : <div className="text-xs text-muted-foreground">Belum cukup data historis…</div>}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium">Konteks tambahan (opsional)</label>
