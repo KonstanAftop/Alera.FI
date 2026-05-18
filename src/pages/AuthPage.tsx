@@ -9,6 +9,7 @@ import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X }
 import { toast } from "sonner";
 import RegisterMap from "@/components/RegisterMap";
 import { supabase } from "@/lib/supabase";
+import { API_BASE_URL } from "@/lib/api";
 
 const AuthPage = () => {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -36,7 +37,7 @@ const AuthPage = () => {
   useEffect(() => {
     const fetchInstruments = async () => {
       try {
-        const res = await fetch("http://localhost:8005/instruments");
+        const res = await fetch(`${API_BASE_URL}/instruments`);
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -61,7 +62,7 @@ const AuthPage = () => {
     if (step === 2 && role === "personal" && lngLat) {
       setIsLoading(true);
       try {
-        const res = await fetch("http://localhost:8005/register/profile", {
+        const res = await fetch(`${API_BASE_URL}/register/profile`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -108,7 +109,7 @@ const AuthPage = () => {
         navigate("/");
       } else {
         // 1. Create user via backend admin API (bypasses email confirmation)
-        const authRes = await fetch("http://localhost:8005/auth/register", {
+        const authRes = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -151,7 +152,7 @@ const AuthPage = () => {
           backendPayload.river_distance = riverDistance;
         }
 
-        const res = await fetch("http://localhost:8005/register/complete", {
+        const res = await fetch(`${API_BASE_URL}/register/complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(backendPayload),

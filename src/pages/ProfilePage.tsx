@@ -8,7 +8,7 @@ import { User, Mail, MapPin, Save, LogOut, X } from "lucide-react";
 import { toast } from "sonner";
 import RegisterMap from "@/components/RegisterMap";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchApi } from "@/lib/api";
+import { API_BASE_URL, fetchApi } from "@/lib/api";
 
 const ProfilePage = () => {
   const { user, signOut, loading, refreshUser } = useAuth();
@@ -52,7 +52,7 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchInstruments = async () => {
       try {
-        const res = await fetch("http://localhost:8005/instruments");
+        const res = await fetch(`${API_BASE_URL}/instruments`);
         const data = await res.json() as Array<{
           sensor_id: string;
           pos_name: string;

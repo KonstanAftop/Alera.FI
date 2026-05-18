@@ -22,4 +22,4 @@ TIFF_PATH = REPO_ROOT / "public" / "geo" / "flood_risk.tiff"
 
 # Server configuration
 HOST = "0.0.0.0"
-PORT = 8005
+PORT = int(os.environ.get("PORT", "8005"))

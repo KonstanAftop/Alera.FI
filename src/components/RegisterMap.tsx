@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
 import { Search, Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/lib/api";
 
 interface RegisterMapProps {
   onLocationChange?: (lngLat: [number, number], address?: string) => void;
@@ -235,7 +236,9 @@ const RegisterMap = ({
     if (!search.trim()) return;
     setIsSearching(true);
     try {
-      const res = await fetch(`http://localhost:8005/geocoding/search?q=${encodeURIComponent(search + " Bandung")}`);
+      const res = await fetch(
+        `${API_BASE_URL}/geocoding/search?q=${encodeURIComponent(search + " Bandung")}`,
+      );
       const data = await res.json();
       setSearchResults(data);
     } catch (err) {
