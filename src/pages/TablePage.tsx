@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useHistoricalSensorData } from "@/hooks/useHistoricalSensorData";
 import { useAuth } from "@/hooks/useAuth";
-import { THRESHOLDS } from "@/data/posStore";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,8 +47,8 @@ const formatRaw = (tipe: "ARR" | "AWLR", v: number) =>
   tipe === "ARR" ? `${v.toFixed(1)} mm/jam` : `${(v * 100).toFixed(0)} cm`;
 
 
-// --- Mock draft generator (multi-stasiun) ---
-const generateMockDraft = (selected: PosWithTrend[], context: string, communityName: string = "Alera FI", managedArea: string = "") => {
+// --- Warning draft generator (multi-stasiun) ---
+const generateWarningDraft = (selected: PosWithTrend[], context: string, communityName: string = "Alera FI", managedArea: string = "") => {
   const siaga1 = selected.filter((p) => p.reading?.status === "siaga1");
   const siaga2 = selected.filter((p) => p.reading?.status === "siaga2");
   const siaga3 = selected.filter((p) => p.reading?.status === "siaga3");
@@ -291,10 +291,9 @@ const TablePage = () => {
   const handleGenerate = async () => {
     if (selected.length === 0) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 700));
     const communityName = user?.nama || "Alera FI";
     const managedArea = user?.managedArea || "";
-    setDraft(generateMockDraft(selected, context, communityName, managedArea));
+    setDraft(generateWarningDraft(selected, context, communityName, managedArea));
     setGenerating(false);
     toast.success("Draft peringatan dibuat", { description: "Edit dulu sebelum kirim." });
   };
@@ -307,8 +306,9 @@ const TablePage = () => {
     setSending(true);
     try {
       if (!isCommunityUser) {
-        await new Promise((r) => setTimeout(r, 900));
-        toast.success("Pesan dikirim (simulasi)", { description: `${draft.length} karakter` });
+        toast.error("Fitur ini hanya tersedia untuk akun komunitas", {
+          description: "Hubungi admin untuk mengubah peran akun Anda.",
+        });
         return;
       }
       const data = await sendTelegramBroadcast(draft);
@@ -328,7 +328,6 @@ const TablePage = () => {
   const handleSingleGenerate = async () => {
     if (!singlePos) return;
     setSingleGenerating(true);
-    await new Promise((r) => setTimeout(r, 600));
     const communityName = user?.nama || "Alera FI";
     setSingleDraft(generateSingleDraft(singlePos, singleHistData, singleContext, communityName));
     setSingleGenerating(false);
@@ -343,9 +342,8 @@ const TablePage = () => {
     setSingleSending(true);
     try {
       if (!isCommunityUser) {
-        await new Promise((r) => setTimeout(r, 900));
-        toast.success("Laporan stasiun dikirim (simulasi)", {
-          description: `${singlePos.nama} → Telegram`,
+        toast.error("Fitur ini hanya tersedia untuk akun komunitas", {
+          description: "Hubungi admin untuk mengubah peran akun Anda.",
         });
         return;
       }
