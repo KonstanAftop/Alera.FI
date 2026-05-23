@@ -119,11 +119,10 @@ const pickHistoryDraftPoints = (data: HistoricalPoint[]): HistoricalPoint[] => {
   return points;
 };
 
-const getStatusEmoji = (tipe: "ARR" | "AWLR", val: number) => {
-  const t = tipe === "ARR" ? THRESHOLDS.ARR : THRESHOLDS.AWLR;
-  if (val >= t.siaga1) return "🔴";
-  if (val >= t.siaga2) return "🟡";
-  if (val >= t.siaga3) return "🔵";
+const getStatusEmoji = (level: number) => {
+  if (level >= 3) return "🔴";
+  if (level >= 2) return "🟡";
+  if (level >= 1) return "🔵";
   return "🟢";
 };
 
@@ -155,7 +154,7 @@ const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], c
   } else {
     for (const point of trendPoints) {
       const timeStr = formatTimeWIB(point.measured_at);
-      const emoji = getStatusEmoji(p.tipe, Number(point.value));
+      const emoji = getStatusEmoji(Number(point.warning_level) || 0);
       lines.push(`${timeStr} → ${formatRaw(p.tipe, Number(point.value))} ${emoji}`);
     }
     const uniqueTimestamps = new Set(trendPoints.map((pt) => pt.measured_at)).size;
