@@ -18,8 +18,8 @@ interface TelegramGroup {
   isActive: boolean;
 }
 
-const BOT_USERNAME = "@AleraFIBot";
-const BOT_LINK = "https://t.me/AleraFIBot";
+const BOT_USERNAME = "@AleraFI-bot"; 
+const BOT_LINK = "https://t.me/XFlood2026bot";
 
 interface TelegramStatusResponse {
   status: string;
