@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   MessageCircle, Copy, CheckCircle2, Link2, Unlink, Send,
-  Radio, Loader2, RefreshCw, AlertTriangle, Bot,
+  Radio, Loader2, RefreshCw, AlertTriangle, Bot, Bell,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchApi } from "@/lib/api";
@@ -39,6 +40,8 @@ const CommunityTelegramPage = () => {
   const [testSending, setTestSending] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoAlertEnabled, setAutoAlertEnabled] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   const applyLinkStatus = async (data?: TelegramStatusResponse["data"]) => {
     if (data?.telegram_group_id) {
@@ -101,6 +104,25 @@ const CommunityTelegramPage = () => {
 
     return () => clearInterval(interval);
   }, [user?.id, linkedGroup, linkCode]);
+
+  // Fetch auto alert status when group is linked
+  useEffect(() => {
+    const fetchAutoAlertStatus = async () => {
+      if (!user?.id || !linkedGroup) return;
+      try {
+        const response = await fetchApi<{ status: string; auto_alert_enabled?: boolean }>(
+          `/telegram/auto-alert-status?user_id=${user.id}`,
+        );
+        if (response.status === "success") {
+          setAutoAlertEnabled(response.auto_alert_enabled || false);
+        }
+      } catch (err) {
+        console.error("Failed to fetch auto alert status:", err);
+      }
+    };
+
+    fetchAutoAlertStatus();
+  }, [user?.id, linkedGroup]);
 
   const generateLinkCode = async () => {
     setGenerating(true);
@@ -170,6 +192,7 @@ const CommunityTelegramPage = () => {
       if (data.status === "success") {
         setLinkedGroup(null);
         setLinkCode(null);
+        setAutoAlertEnabled(false);
         await refreshUser();
         toast.success("Group Telegram berhasil diputus.");
       } else {
@@ -180,6 +203,31 @@ const CommunityTelegramPage = () => {
       toast.error(err.message || "Gagal memutus koneksi group.");
     } finally {
       setUnlinking(false);
+    }
+  };
+
+  const handleToggleAutoAlert = async () => {
+    setToggling(true);
+    try {
+      const newValue = !autoAlertEnabled;
+      const response = await fetchApi<{ status: string }>(
+        "/telegram/toggle-auto-alert",
+        {
+          method: "POST",
+          body: JSON.stringify({ user_id: user?.id, enabled: newValue }),
+        },
+      );
+      if (response.status === "success") {
+        setAutoAlertEnabled(newValue);
+        toast.success(newValue ? "Notifikasi otomatis diaktifkan!" : "Notifikasi otomatis dinonaktifkan.");
+      } else {
+        throw new Error("Gagal mengubah pengaturan.");
+      }
+    } catch (err: any) {
+      console.error("Error toggling auto alert:", err);
+      toast.error(err.message || "Gagal mengubah pengaturan.");
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -238,6 +286,26 @@ const CommunityTelegramPage = () => {
                   <div className="flex items-center gap-2 text-[11px] text-emerald-400">
                     <Radio className="h-3 w-3 animate-pulse" />
                     <span className="font-bold">AKTIF</span> — Broadcast otomatis dikirim ke group ini.
+                  </div>
+                </div>
+
+                {/* Toggle Auto Alert */}
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Peringatan Otomatis</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Kirim notifikasi saat level pos berubah
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={autoAlertEnabled}
+                      onCheckedChange={handleToggleAutoAlert}
+                      disabled={toggling}
+                    />
                   </div>
                 </div>
 
