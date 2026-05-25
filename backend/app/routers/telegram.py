@@ -211,15 +211,78 @@ async def telegram_unlink(req: dict):
     try:
         supabase = get_supabase()
         
-        # Clear Telegram group info
+        # Clear Telegram group info and disable auto alert
         supabase.table("community_profiles").update({
             "telegram_group_id": None,
             "telegram_group_title": None,
-            "telegram_linked_at": None
+            "telegram_linked_at": None,
+            "auto_alert_enabled": False
         }).eq("user_id", user_id).execute()
         
         return {"status": "success", "message": "Telegram group unlinked"}
     
     except Exception as e:
         print(f"Error unlinking Telegram: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/toggle-auto-alert")
+async def toggle_auto_alert(req: dict):
+    """
+    Toggle automatic alert notifications for community.
+    Only works if Telegram group is already linked.
+    """
+    user_id = req.get("user_id")
+    enabled = req.get("enabled")
+    
+    if not user_id or enabled is None:
+        raise HTTPException(status_code=400, detail="Missing user_id or enabled")
+    
+    try:
+        supabase = get_supabase()
+        
+        # Verify Telegram is linked
+        profile = supabase.table("community_profiles").select("telegram_group_id").eq("user_id", user_id).execute()
+        if not profile.data or not profile.data[0].get("telegram_group_id"):
+            raise HTTPException(status_code=400, detail="Telegram group not linked yet")
+        
+        # Update auto_alert_enabled
+        supabase.table("community_profiles").update({
+            "auto_alert_enabled": enabled
+        }).eq("user_id", user_id).execute()
+        
+        return {"status": "success", "auto_alert_enabled": enabled}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error toggling auto alert: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/auto-alert-status")
+async def get_auto_alert_status(user_id: str):
+    """
+    Get auto alert enabled status for community.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
+    
+    try:
+        supabase = get_supabase()
+        result = supabase.table("community_profiles").select(
+            "telegram_group_id, auto_alert_enabled"
+        ).eq("user_id", user_id).single().execute()
+        
+        if not result.data:
+            return {"status": "error", "message": "Profile not found"}
+        
+        return {
+            "status": "success",
+            "telegram_linked": bool(result.data.get("telegram_group_id")),
+            "auto_alert_enabled": result.data.get("auto_alert_enabled", False)
+        }
+    
+    except Exception as e:
+        print(f"Error fetching auto alert status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
