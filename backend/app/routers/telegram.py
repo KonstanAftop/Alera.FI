@@ -2,8 +2,28 @@ import secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from app.core.database import get_supabase, get_telegram_bot, telegram_bot
+from app.services.telegram_format import (
+    display_community_name,
+    format_broadcast_message,
+    format_test_message,
+)
 
 router = APIRouter(prefix="/telegram", tags=["Telegram"])
+
+
+def _get_linked_community_profile(supabase, user_id: str) -> dict:
+    result = (
+        supabase.table("community_profiles")
+        .select("telegram_group_id, telegram_group_title, community_name")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Community profile not found")
+    row = result.data[0]
+    if not row.get("telegram_group_id"):
+        raise HTTPException(status_code=400, detail="Telegram group not linked yet")
+    return row
 
 
 @router.post("/generate-link-code")
@@ -127,32 +147,31 @@ async def telegram_broadcast(req: dict):
     try:
         supabase = get_supabase()
         bot = get_telegram_bot()
-        
-        # Get community profile with telegram_group_id
-        profile = supabase.table("community_profiles").select("telegram_group_id, telegram_group_title").eq("user_id", user_id).execute()
-        if not profile.data or not profile.data[0].get("telegram_group_id"):
-            raise HTTPException(status_code=400, detail="Telegram group not linked yet")
-        
-        group_id = profile.data[0]["telegram_group_id"]
-        group_title = profile.data[0].get("telegram_group_title", "Unknown Group")
-        
-        # Send message
+        profile = _get_linked_community_profile(supabase, user_id)
+
+        group_id = profile["telegram_group_id"]
+        group_title = profile.get("telegram_group_title", "Unknown Group")
+        full_text = format_broadcast_message(profile, message)
+
         await bot.send_message(
             chat_id=int(group_id),
-            text=f"📢 **Pesan dari Dashboard Majalaya**\n\n{message}",
-            parse_mode="Markdown"
+            text=full_text,
+            parse_mode="Markdown",
         )
-        
-        # Log notification
+
         supabase.table("notification_log").insert({
             "user_id": user_id,
-            "message_text": message,
+            "message_text": full_text,
             "sent_at": datetime.now(timezone.utc).isoformat(),
             "channel": "telegram_channel",
             "warning_level": 0
         }).execute()
         
-        return {"status": "success", "message": f"Broadcast sent to {group_title}"}
+        return {
+            "status": "success",
+            "message": f"Broadcast sent to {group_title}",
+            "community_name": display_community_name(profile),
+        }
     
     except HTTPException:
         raise
@@ -176,21 +195,29 @@ async def test_telegram_broadcast(req: dict):
     try:
         supabase = get_supabase()
         bot = get_telegram_bot()
-        
-        # Get community profile
-        profile = supabase.table("community_profiles").select("telegram_group_id").eq("user_id", user_id).execute()
-        if not profile.data or not profile.data[0].get("telegram_group_id"):
-            raise HTTPException(status_code=400, detail="Telegram group not linked yet")
-        
-        group_id = profile.data[0]["telegram_group_id"]
-        
-        # Send test message
+        profile = _get_linked_community_profile(supabase, user_id)
+        community_name = display_community_name(profile)
+        test_text = format_test_message(profile)
+
         await bot.send_message(
-            chat_id=int(group_id),
-            text="🔔 Test notifikasi dari Dashboard Majalaya. Koneksi berhasil!"
+            chat_id=int(profile["telegram_group_id"]),
+            text=test_text,
+            parse_mode="Markdown",
         )
-        
-        return {"status": "success", "message": "Test message sent"}
+
+        supabase.table("notification_log").insert({
+            "user_id": user_id,
+            "message_text": test_text,
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+            "channel": "telegram_channel",
+            "warning_level": 0,
+        }).execute()
+
+        return {
+            "status": "success",
+            "message": "Test message sent",
+            "community_name": community_name,
+        }
     
     except HTTPException:
         raise
