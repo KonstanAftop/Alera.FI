@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchApi } from "@/lib/api";
+import { TELEGRAM_BOT_LINK, TELEGRAM_BOT_USERNAME } from "@/lib/telegramBot";
 
 interface TelegramGroup {
   groupId: string;
@@ -18,9 +19,6 @@ interface TelegramGroup {
   linkedAt: string;
   isActive: boolean;
 }
-
-const BOT_USERNAME = "@AleraFI-bot"; 
-const BOT_LINK = "https://t.me/XFlood2026bot";
 
 interface TelegramStatusResponse {
   status: string;
@@ -421,12 +419,12 @@ const CommunityTelegramPage = () => {
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     Buka group Telegram komunitas Anda, lalu invite{" "}
                     <a
-                      href={BOT_LINK}
+                      href={TELEGRAM_BOT_LINK}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary underline font-medium inline-flex items-center gap-1"
                     >
-                      <MessageCircle className="h-3 w-3" /> {BOT_USERNAME}
+                      <MessageCircle className="h-3 w-3" /> {TELEGRAM_BOT_USERNAME}
                     </a>{" "}
                     ke dalam group.
                   </p>

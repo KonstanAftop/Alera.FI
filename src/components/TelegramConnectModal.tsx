@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Radio, MessageCircle, Copy, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
+import { TELEGRAM_BOT_LINK, TELEGRAM_BOT_USERNAME } from "@/lib/telegramBot";
 
 interface Props {
   activationCode: string;
@@ -58,22 +59,31 @@ const TelegramConnectModal = ({ activationCode, onDismiss }: Props) => {
           <div className="space-y-3 text-sm text-muted-foreground">
             <p className="flex items-start gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
-              Buka Telegram dan cari bot{" "}
+              Buka Telegram dan buka bot{" "}
               <a
-                href="https://t.me/AleraFIBot"
+                href={TELEGRAM_BOT_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary underline font-medium inline-flex items-center gap-1"
               >
-                <MessageCircle className="h-3 w-3" /> @AleraFIBot
+                <MessageCircle className="h-3 w-3" /> {TELEGRAM_BOT_USERNAME}
               </a>
+              .
             </p>
             <p className="flex items-start gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">2</span>
-              Kirim kode aktivasi di atas ke bot (bisa langsung paste).
+              <span>
+                Kirim perintah{" "}
+                <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono text-foreground">/start</code>{" "}
+                ke bot terlebih dahulu.
+              </span>
             </p>
             <p className="flex items-start gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
+              Kirim kode aktivasi di atas ke bot (bisa langsung paste).
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">4</span>
               Bot akan memverifikasi dan mengaktifkan notifikasi Anda.
             </p>
           </div>
