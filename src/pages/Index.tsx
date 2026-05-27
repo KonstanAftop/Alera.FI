@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Map as MLMap } from "maplibre-gl";
+import maplibregl, { type Map as MLMap } from "maplibre-gl";
 import Map3D, { type PosMonitoring, type PosReading } from "@/components/Map3D";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,9 +135,14 @@ const MAP_PANEL_WIDTH = 300;
 const MAP_PANEL_GAP = 16;
 type PanelTab = "info" | "monitoring";
 
+function isValidLngLat([lng, lat]: [number, number]): boolean {
+  return Number.isFinite(lng) && Number.isFinite(lat) && !(lng === 0 && lat === 0);
+}
+
 const Index = () => {
   const mapRef = useRef<MLMap | null>(null);
   const hasAutoFocusedPosRef = useRef(false);
+  const hasAutoFitCommunityRef = useRef(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [pitch, setPitch] = useState(70);
   const [bearing, setBearing] = useState(-25);
@@ -222,6 +227,53 @@ const Index = () => {
     });
   }, [mapPadding, mode]);
 
+  const fitMapToPositions = useCallback(
+    (positions: PosMonitoring[]) => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      const coords = positions
+        .filter((p) => isValidLngLat(p.lngLat))
+        .map((p) => p.lngLat);
+      if (coords.length === 0) return;
+
+      const pitch = mode === "3d" ? 70 : 0;
+      const bearing = mode === "3d" ? -25 : 0;
+
+      if (coords.length === 1) {
+        map.flyTo({
+          center: coords[0],
+          zoom: 13,
+          pitch,
+          bearing,
+          padding: mapPadding,
+          duration: 1400,
+          essential: true,
+        });
+        return;
+      }
+
+      const bounds = coords.reduce(
+        (b, lngLat) => b.extend(lngLat),
+        new maplibregl.LngLatBounds(coords[0], coords[0]),
+      );
+      map.fitBounds(bounds, {
+        padding: mapPadding,
+        maxZoom: 14,
+        pitch,
+        bearing,
+        duration: 1400,
+        essential: true,
+      });
+    },
+    [mapPadding, mode],
+  );
+
+  const communityPosWithCoords = useMemo(
+    () => (userRole === "community" ? posList.filter((p) => isValidLngLat(p.lngLat)) : []),
+    [posList, userRole],
+  );
+
   useEffect(() => {
     if (userRole !== "personal") {
       hasAutoFocusedPosRef.current = false;
@@ -231,6 +283,29 @@ const Index = () => {
     hasAutoFocusedPosRef.current = true;
     flyToPos(initialPersonalPos);
   }, [flyToPos, initialPersonalPos, isMapReady, userRole]);
+
+  useEffect(() => {
+    if (userRole !== "community") {
+      hasAutoFitCommunityRef.current = false;
+      return;
+    }
+    if (
+      hasAutoFitCommunityRef.current ||
+      !isMapReady ||
+      sensorsLoading ||
+      communityPosWithCoords.length === 0
+    ) {
+      return;
+    }
+    hasAutoFitCommunityRef.current = true;
+    fitMapToPositions(communityPosWithCoords);
+  }, [
+    communityPosWithCoords,
+    fitMapToPositions,
+    isMapReady,
+    sensorsLoading,
+    userRole,
+  ]);
 
   const zoomBy = (delta: number) => mapRef.current?.zoomTo(mapRef.current.getZoom() + delta, { duration: 300 });
   const setMode2D = () => {
@@ -243,15 +318,20 @@ const Index = () => {
   };
   const rotateBy = (delta: number) =>
     mapRef.current?.easeTo({ bearing: mapRef.current.getBearing() + delta, duration: 400 });
-  const resetView = () =>
-    mapRef.current?.easeTo({ 
-      center: userRole === "personal" && user?.homeLngLat ? user.homeLngLat : [107.6191, -6.9175], // Use Bandung center 
-      zoom: 9.5, // Adjusted zoom to better show West Java region
-      pitch: mode === "3d" ? 70 : 0, 
-      bearing: mode === "3d" ? -25 : 0, 
+  const resetView = () => {
+    if (userRole === "community" && communityPosWithCoords.length > 0) {
+      fitMapToPositions(communityPosWithCoords);
+      return;
+    }
+    mapRef.current?.easeTo({
+      center: userRole === "personal" && user?.homeLngLat ? user.homeLngLat : [107.6191, -6.9175],
+      zoom: 9.5,
+      pitch: mode === "3d" ? 70 : 0,
+      bearing: mode === "3d" ? -25 : 0,
       padding: mapPadding,
-      duration: 900 
+      duration: 900,
     });
+  };
 
   const arrList = useMemo(() => statusPosList.filter((p) => p.tipe === "ARR"), [statusPosList]);
   const awlrList = useMemo(() => statusPosList.filter((p) => p.tipe === "AWLR"), [statusPosList]);
