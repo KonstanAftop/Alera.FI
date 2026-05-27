@@ -72,7 +72,12 @@ const TelegramConnectModal = ({ activationCode, telegramLinked, refreshUser, onD
   };
 
   return (
-    <Dialog open={true} onOpenChange={() => {}}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onDismiss();
+      }}
+    >
       <DialogContent className="sm:max-w-md border-border bg-card/95 backdrop-blur-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
