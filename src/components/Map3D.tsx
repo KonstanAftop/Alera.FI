@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
 import { formatTimeWIB } from "@/lib/wibDatetime";
 
@@ -34,10 +34,148 @@ export interface PosMonitoring {
 
 interface Map3DProps {
   onMapReady?: (map: MLMap) => void;
+  /** Fired once map + sensor data are ready and markers are synced. */
+  onMarkersReady?: () => void;
+  /** When false, marker-ready callback waits (avoids hiding loading before /api/sensors returns). */
+  sensorDataReady?: boolean;
   posList?: PosMonitoring[];
   onPosClick?: (pos: PosMonitoring) => void;
   homeLngLat?: [number, number];
   homeLabel?: string;
+}
+
+function isValidLngLat([lng, lat]: [number, number]): boolean {
+  return Number.isFinite(lng) && Number.isFinite(lat) && !(lng === 0 && lat === 0);
+}
+
+/** Hillshade, rivers, terrain, and 3D buildings — deferred so pos markers appear sooner. */
+function enhanceMap3D(map: MLMap) {
+  if (map.getLayer("hillshade")) return;
+
+  if (!map.getSource("rivers")) {
+    map.addSource("rivers", { type: "geojson", data: RIVERS_GEOJSON_URL });
+  }
+
+  map.addLayer({
+    id: "hillshade",
+    type: "hillshade",
+    source: "hillshadeSource",
+    paint: {
+      "hillshade-shadow-color": "#1f2937",
+      "hillshade-highlight-color": "#ffffff",
+      "hillshade-accent-color": "#475569",
+      "hillshade-exaggeration": 0.6,
+    },
+  });
+
+  map.addLayer({
+    id: "river-glow",
+    type: "line",
+    source: "rivers",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": "#38bdf8",
+      "line-blur": 5,
+      "line-opacity": 0.4,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 12],
+    },
+  });
+
+  map.addLayer({
+    id: "river-main",
+    type: "line",
+    source: "rivers",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": [
+        "case",
+        ["==", ["get", "waterway"], "river"],
+        "#0284c7",
+        "#38bdf8",
+      ],
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        10,
+        ["case", ["==", ["get", "waterway"], "river"], 2, 0.8],
+        14,
+        ["case", ["==", ["get", "waterway"], "river"], 6, 2.5],
+      ],
+      "line-opacity": 0.9,
+    },
+  });
+
+  map.addLayer({
+    id: "3d-buildings",
+    type: "fill-extrusion",
+    source: "osm-buildings",
+    "source-layer": "building",
+    minzoom: 14,
+    paint: {
+      "fill-extrusion-color": [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "height"], 8],
+        0,
+        "#d8e3ec",
+        10,
+        "#b9c8d6",
+        25,
+        "#7c98b2",
+        60,
+        "#3b5b78",
+      ],
+      "fill-extrusion-height": ["coalesce", ["get", "height"], 8],
+      "fill-extrusion-base": ["coalesce", ["get", "minHeight"], 0],
+      "fill-extrusion-opacity": 0.92,
+    },
+  });
+
+  try {
+    map.setTerrain({ source: "terrainSource", exaggeration: 1.6 });
+    map.setSky({
+      "sky-color": "#9bc8ff",
+      "horizon-color": "#e6f0ff",
+      "fog-color": "#e6eef7",
+      "sky-horizon-blend": 0.6,
+      "horizon-fog-blend": 0.6,
+      "fog-ground-blend": 0.1,
+      "atmosphere-blend": 0.8,
+    });
+  } catch {
+    /* noop */
+  }
+
+  const riverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+  const riverLayers = ["river-main"];
+  riverLayers.forEach((lyr) => {
+    map.on("mouseenter", lyr, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", lyr, () => {
+      map.getCanvas().style.cursor = "";
+      riverPopup.remove();
+    });
+    map.on("mousemove", lyr, (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const p = f.properties as { name?: string; waterway?: string };
+      const label = p.name || "Sungai";
+      const sub = p.waterway
+        ? p.waterway.charAt(0).toUpperCase() + p.waterway.slice(1)
+        : "Waterway";
+      riverPopup
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div style="font-family:system-ui;font-size:12px;padding:4px 8px;line-height:1.5">
+            <strong style="color:#0f172a">${label}</strong>
+            <div style="font-size:10px;color:#64748b;margin-top:1px">${sub}</div>
+          </div>`,
+        )
+        .addTo(map);
+    });
+  });
 }
 
 const MAJALAYA_CENTER: [number, number] = [107.7619, -7.0428];
@@ -146,22 +284,129 @@ function buildPosPopupHtml(pos: PosMonitoring): string {
   `;
 }
 
-const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: Map3DProps) => {
+const Map3D = ({
+  onMapReady,
+  onMarkersReady,
+  sensorDataReady = true,
+  posList = [],
+  onPosClick,
+  homeLngLat,
+  homeLabel,
+}: Map3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const markersRef = useRef<Map<string, { marker: maplibregl.Marker; el: HTMLButtonElement; popup: maplibregl.Popup }>>(new Map());
   const homeMarkerRef = useRef<maplibregl.Marker | null>(null);
   const onMapReadyRef = useRef(onMapReady);
+  const onMarkersReadyRef = useRef(onMarkersReady);
   const onPosClickRef = useRef(onPosClick);
+  const posListRef = useRef(posList);
+  const sensorDataReadyRef = useRef(sensorDataReady);
+  const markersReadyFiredRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+
+  posListRef.current = posList;
+  sensorDataReadyRef.current = sensorDataReady;
 
   useEffect(() => {
     onMapReadyRef.current = onMapReady;
   }, [onMapReady]);
 
   useEffect(() => {
+    onMarkersReadyRef.current = onMarkersReady;
+  }, [onMarkersReady]);
+
+  useEffect(() => {
     onPosClickRef.current = onPosClick;
   }, [onPosClick]);
+
+  const notifyMarkersReady = useCallback(() => {
+    if (!sensorDataReadyRef.current || !mapRef.current) return;
+    if (markersReadyFiredRef.current) return;
+    markersReadyFiredRef.current = true;
+    onMarkersReadyRef.current?.();
+  }, []);
+
+  const syncPosMarkers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const list = posListRef.current.filter((pos) => isValidLngLat(pos.lngLat));
+    const seen = new Set<string>();
+
+    list.forEach((pos) => {
+      seen.add(pos.id);
+      const status = pos.reading?.status ?? "normal";
+      const statusColor = STATUS_COLOR[status];
+      const isRain = pos.tipe === "ARR";
+      const blink = status !== "normal";
+      const popupHtml = buildPosPopupHtml(pos);
+
+      const existing = markersRef.current.get(pos.id);
+      if (existing) {
+        existing.el.style.background = statusColor;
+        existing.el.style.color = statusColor;
+        existing.el.style.boxShadow = `0 4px 12px rgba(0,0,0,0.3)`;
+        existing.el.dataset.status = status;
+        existing.el.classList.toggle("pos-blink", blink);
+        existing.el.onclick = () => onPosClickRef.current?.(pos);
+        existing.popup.setHTML(popupHtml);
+        return;
+      }
+
+      const container = document.createElement("div");
+      container.style.width = "30px";
+      container.style.height = "30px";
+      container.style.display = "flex";
+      container.style.alignItems = "center";
+      container.style.justifyContent = "center";
+
+      const el = document.createElement("button");
+      el.type = "button";
+      el.setAttribute("aria-label", `Pos ${pos.nama}`);
+      el.dataset.status = status;
+      el.className = blink ? "pos-marker pos-blink" : "pos-marker";
+      el.style.cssText = `
+          width: 32px; height: 32px; border-radius: 9999px;
+          background: ${statusColor};
+          color: ${statusColor};
+          border: 2.5px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          cursor: pointer; transition: transform .15s ease;
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;line-height:1;
+        `;
+      const rainIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`;
+      const waterIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
+
+      el.innerHTML = isRain ? rainIcon : waterIcon;
+      el.onmouseenter = () => {
+        el.style.transform = "scale(1.18)";
+      };
+      el.onmouseleave = () => {
+        el.style.transform = "scale(1)";
+      };
+
+      const popup = new maplibregl.Popup(POS_POPUP_OPTIONS).setHTML(popupHtml);
+      container.appendChild(el);
+      const marker = new maplibregl.Marker({ element: container })
+        .setLngLat(pos.lngLat)
+        .setPopup(popup)
+        .addTo(map);
+
+      el.onclick = () => onPosClickRef.current?.(pos);
+      markersRef.current.set(pos.id, { marker, el, popup });
+    });
+
+    markersRef.current.forEach((m, id) => {
+      if (!seen.has(id)) {
+        m.marker.remove();
+        markersRef.current.delete(id);
+      }
+    });
+
+    notifyMarkersReady();
+  }, [notifyMarkersReady]);
 
   // Init map once
   useEffect(() => {
@@ -209,77 +454,8 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
             minzoom: 14,
             maxzoom: 16,
           },
-          rivers: {
-            type: "geojson",
-            data: RIVERS_GEOJSON_URL,
-          },
         },
-        layers: [
-          { id: "carto-raster", type: "raster", source: "carto-base" },
-          {
-            id: "hillshade",
-            type: "hillshade",
-            source: "hillshadeSource",
-            paint: {
-              "hillshade-shadow-color": "#1f2937",
-              "hillshade-highlight-color": "#ffffff",
-              "hillshade-accent-color": "#475569",
-              "hillshade-exaggeration": 0.6,
-            },
-          },
-          // Outer glow for all rivers
-          {
-            id: "river-glow",
-            type: "line",
-            source: "rivers",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": "#38bdf8",
-              "line-blur": 5,
-              "line-opacity": 0.4,
-              "line-width": [
-                "interpolate", ["linear"], ["zoom"],
-                10, 4, 14, 12,
-              ],
-            },
-          },
-          // Main line rendering
-          {
-            id: "river-main",
-            type: "line",
-            source: "rivers",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": [
-                "case",
-                ["==", ["get", "waterway"], "river"], "#0284c7",
-                "#38bdf8",
-              ],
-              "line-width": [
-                "interpolate", ["linear"], ["zoom"],
-                10, ["case", ["==", ["get", "waterway"], "river"], 2, 0.8],
-                14, ["case", ["==", ["get", "waterway"], "river"], 6, 2.5],
-              ],
-              "line-opacity": 0.9,
-            },
-          },
-          {
-            id: "3d-buildings",
-            type: "fill-extrusion",
-            source: "osm-buildings",
-            "source-layer": "building",
-            minzoom: 14,
-            paint: {
-              "fill-extrusion-color": [
-                "interpolate", ["linear"], ["coalesce", ["get", "height"], 8],
-                0, "#d8e3ec", 10, "#b9c8d6", 25, "#7c98b2", 60, "#3b5b78",
-              ],
-              "fill-extrusion-height": ["coalesce", ["get", "height"], 8],
-              "fill-extrusion-base": ["coalesce", ["get", "minHeight"], 0],
-              "fill-extrusion-opacity": 0.92,
-            },
-          },
-        ],
+        layers: [{ id: "carto-raster", type: "raster", source: "carto-base" }],
       },
       center: MAJALAYA_CENTER,
       zoom: 12.2,
@@ -307,49 +483,19 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
     );
 
     map.on("load", () => {
-      map.setTerrain({ source: "terrainSource", exaggeration: 1.6 });
-      try {
-        map.setSky({
-          "sky-color": "#9bc8ff",
-          "horizon-color": "#e6f0ff",
-          "fog-color": "#e6eef7",
-          "sky-horizon-blend": 0.6,
-          "horizon-fog-blend": 0.6,
-          "fog-ground-blend": 0.1,
-          "atmosphere-blend": 0.8,
-        });
-      } catch {
-        /* noop */
-      }
-      // River hover popup
-      const riverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
-      const riverLayers = ["river-main"];
-      riverLayers.forEach((lyr) => {
-        map.on("mouseenter", lyr, () => (map.getCanvas().style.cursor = "pointer"));
-        map.on("mouseleave", lyr, () => {
-          map.getCanvas().style.cursor = "";
-          riverPopup.remove();
-        });
-        map.on("mousemove", lyr, (e) => {
-          const f = e.features?.[0];
-          if (!f) return;
-          const p = f.properties as { name?: string; waterway?: string };
-          const label = p.name || "Sungai";
-          const sub = p.waterway ? p.waterway.charAt(0).toUpperCase() + p.waterway.slice(1) : "Waterway";
-          riverPopup
-            .setLngLat(e.lngLat)
-            .setHTML(
-              `<div style="font-family:system-ui;font-size:12px;padding:4px 8px;line-height:1.5">
-                <strong style="color:#0f172a">${label}</strong>
-                <div style="font-size:10px;color:#64748b;margin-top:1px">${sub}</div>
-              </div>`,
-            )
-            .addTo(map);
-        });
-      });
-
       setMapReady(true);
+      syncPosMarkers();
       onMapReadyRef.current?.(map);
+
+      const runEnhance = () => {
+        if (!mapRef.current || mapRef.current !== map) return;
+        enhanceMap3D(map);
+      };
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(runEnhance, { timeout: 2000 });
+      } else {
+        window.setTimeout(runEnhance, 50);
+      }
     });
 
     mapRef.current = map;
@@ -358,94 +504,19 @@ const Map3D = ({ onMapReady, posList = [], onPosClick, homeLngLat, homeLabel }: 
       markersRef.current.forEach((m) => m.marker.remove());
       markersRef.current.clear();
       homeMarkerRef.current?.remove();
+      homeMarkerRef.current = null;
+      markersReadyFiredRef.current = false;
+      setMapReady(false);
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [syncPosMarkers]);
 
-  // Sync markers whenever posList changes (incl. realtime updates)
+  // Sync markers when sensor data arrives or updates (poll / navigation)
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    const apply = () => {
-      const seen = new Set<string>();
-
-      posList.forEach((pos) => {
-        seen.add(pos.id);
-        const status = pos.reading?.status ?? "normal";
-        const statusColor = STATUS_COLOR[status];
-        const isRain = pos.tipe === "ARR";
-        const blink = status !== "normal";
-
-        const popupHtml = buildPosPopupHtml(pos);
-
-        const existing = markersRef.current.get(pos.id);
-        if (existing) {
-          // Update style + popup in place (no flicker, marker stays put)
-          existing.el.style.background = statusColor;
-          existing.el.style.color = statusColor;
-          existing.el.style.boxShadow = `0 4px 12px rgba(0,0,0,0.3)`;
-          existing.el.dataset.status = status;
-          existing.el.classList.toggle("pos-blink", blink);
-          existing.el.onclick = () => onPosClickRef.current?.(pos);
-          existing.popup.setHTML(popupHtml);
-          return;
-        }
-
-        const container = document.createElement("div");
-        container.style.width = "30px";
-        container.style.height = "30px";
-        container.style.display = "flex";
-        container.style.alignItems = "center";
-        container.style.justifyContent = "center";
-
-        const el = document.createElement("button");
-        el.type = "button";
-        el.setAttribute("aria-label", `Pos ${pos.nama}`);
-        el.dataset.status = status;
-        el.className = blink ? "pos-marker pos-blink" : "pos-marker";
-        el.style.cssText = `
-          width: 32px; height: 32px; border-radius: 9999px;
-          background: ${statusColor};
-          color: ${statusColor};
-          border: 2.5px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          cursor: pointer; transition: transform .15s ease;
-          display:flex;align-items:center;justify-content:center;
-          font-size:13px;line-height:1;
-        `;
-        const rainIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`;
-        const waterIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
-        
-        el.innerHTML = isRain ? rainIcon : waterIcon;
-        el.onmouseenter = () => (el.style.transform = "scale(1.18)");
-        el.onmouseleave = () => (el.style.transform = "scale(1)");
-        
-        const popup = new maplibregl.Popup(POS_POPUP_OPTIONS).setHTML(popupHtml);
-        container.appendChild(el);
-        const marker = new maplibregl.Marker({ element: container })
-          .setLngLat(pos.lngLat)
-          .setPopup(popup)
-          .addTo(map);
-
-        el.onclick = () => onPosClickRef.current?.(pos);
-
-        markersRef.current.set(pos.id, { marker, el, popup });
-      });
-
-      // Remove markers no longer in list
-      markersRef.current.forEach((m, id) => {
-        if (!seen.has(id)) {
-          m.marker.remove();
-          markersRef.current.delete(id);
-        }
-      });
-    };
-
-    if (map.isStyleLoaded()) apply();
-    else map.once("load", apply);
-  }, [posList, mapReady]);
+    if (!mapReady || !sensorDataReady) return;
+    syncPosMarkers();
+  }, [posList, mapReady, sensorDataReady, syncPosMarkers]);
 
   useEffect(() => {
     const map = mapRef.current;
