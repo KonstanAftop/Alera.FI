@@ -146,10 +146,11 @@ const Index = () => {
   const [panelVisible, setPanelVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<PanelTab>("monitoring");
   const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [hasDismissedAutoModal, setHasDismissedAutoModal] = useState(false);
   const navigate = useNavigate();
 
   const { posList } = useSensorData();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const userRole = user?.role || "community";
   const mapPadding = useMemo(
     () => ({
@@ -176,10 +177,10 @@ const Index = () => {
 
   // Show Telegram connection prompt for personal users not yet linked
   useEffect(() => {
-    if (userRole === "personal" && user?.activationCode && !user?.telegramLinked) {
+    if (userRole === "personal" && user?.activationCode && !user?.telegramLinked && !hasDismissedAutoModal) {
       setShowTelegramModal(true);
     }
-  }, [userRole, user?.activationCode, user?.telegramLinked]);
+  }, [userRole, user?.activationCode, user?.telegramLinked, hasDismissedAutoModal]);
 
   useEffect(() => {
     setActiveTab("monitoring");
@@ -375,17 +376,43 @@ const Index = () => {
                 )}
 
                 {userRole === "personal" && subscribedPosList.length > 0 && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-emerald-900">Bot Telegram</h4>
-                        <p className="text-[10px] text-emerald-700">Alert Aktif</p>
+                  user?.telegramLinked ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-emerald-900">Bot Telegram</h4>
+                          <p className="text-[10px] text-emerald-700">Alert Aktif</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 animate-pulse">
+                            <Radio className="h-5 w-5 text-amber-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-amber-900">Bot Telegram</h4>
+                            <p className="text-[10px] text-amber-700">Belum Terhubung</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setHasDismissedAutoModal(false);
+                            setShowTelegramModal(true);
+                          }}
+                          className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 h-auto font-medium"
+                        >
+                          Hubungkan Sekarang
+                        </Button>
+                      </div>
+                    </div>
+                  )
                 )}
               </TabsContent>
             </ScrollArea>
@@ -440,10 +467,15 @@ const Index = () => {
       </div>
 
       {/* Telegram Activation Modal */}
-      {showTelegramModal && user?.activationCode && (
+      {showTelegramModal && user && (
         <TelegramConnectModal
-          activationCode={user.activationCode}
-          onDismiss={() => setShowTelegramModal(false)}
+          activationCode={user.activationCode || ""}
+          telegramLinked={user.telegramLinked}
+          refreshUser={refreshUser}
+          onDismiss={() => {
+            setShowTelegramModal(false);
+            setHasDismissedAutoModal(true);
+          }}
         />
       )}
 

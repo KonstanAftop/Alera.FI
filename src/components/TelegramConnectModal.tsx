@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,23 +7,68 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Radio, MessageCircle, Copy, CheckCircle2, X } from "lucide-react";
+import { Radio, MessageCircle, Copy, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TELEGRAM_BOT_LINK, TELEGRAM_BOT_USERNAME } from "@/lib/telegramBot";
 
 interface Props {
   activationCode: string;
+  telegramLinked?: boolean;
+  refreshUser: () => Promise<any>;
   onDismiss: () => void;
 }
 
-const TelegramConnectModal = ({ activationCode, onDismiss }: Props) => {
+const TelegramConnectModal = ({ activationCode, telegramLinked, refreshUser, onDismiss }: Props) => {
   const [copied, setCopied] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const copyCode = () => {
     navigator.clipboard.writeText(activationCode);
     setCopied(true);
     toast.success("Kode disalin ke clipboard");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // 1. Polling status Telegram setiap 5 detik di background
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshUser();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refreshUser]);
+
+  // 2. Tutup modal secara otomatis ketika terdeteksi sukses terhubung
+  useEffect(() => {
+    if (telegramLinked) {
+      toast.success("Akun Telegram berhasil terhubung!");
+      const timer = setTimeout(() => {
+        onDismiss();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [telegramLinked, onDismiss]);
+
+  // 3. Jika kode aktivasi kosong, ambil/buat kode secara otomatis
+  useEffect(() => {
+    if (!activationCode) {
+      refreshUser();
+    }
+  }, [activationCode, refreshUser]);
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    try {
+      const updatedUser = await refreshUser();
+      if (updatedUser?.telegramLinked) {
+        // Sukses akan ditangani oleh useEffect auto-close
+      } else {
+        toast.error("Belum terdeteksi. Silakan kirim kode aktivasi ke bot terlebih dahulu.");
+      }
+    } catch (error) {
+      toast.error("Gagal memverifikasi status. Silakan coba lagi.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -42,17 +87,26 @@ const TelegramConnectModal = ({ activationCode, onDismiss }: Props) => {
           <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 text-center space-y-2">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Kode Aktivasi Anda</p>
             <div className="flex items-center justify-center gap-3">
-              <span className="text-3xl font-mono font-bold tracking-[0.15em] text-primary">
-                {activationCode}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                onClick={copyCode}
-              >
-                {copied ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              {activationCode ? (
+                <>
+                  <span className="text-3xl font-mono font-bold tracking-[0.15em] text-primary">
+                    {activationCode}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    onClick={copyCode}
+                  >
+                    {copied ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 py-1">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Membuat kode aktivasi...</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -93,12 +147,22 @@ const TelegramConnectModal = ({ activationCode, onDismiss }: Props) => {
           <Button
             variant="ghost"
             onClick={onDismiss}
+            disabled={isVerifying}
             className="flex-1 border border-border hover:bg-muted text-muted-foreground"
           >
             <X className="mr-2 h-4 w-4" /> Nanti Saja
           </Button>
-          <Button onClick={onDismiss} className="flex-[2] bg-primary hover:bg-primary/90 font-bold">
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Saya Sudah Kirim
+          <Button 
+            onClick={handleVerify} 
+            disabled={isVerifying}
+            className="flex-[2] bg-primary hover:bg-primary/90 font-bold"
+          >
+            {isVerifying ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+            )}
+            {isVerifying ? "Memverifikasi..." : "Saya Sudah Kirim"}
           </Button>
         </div>
       </DialogContent>

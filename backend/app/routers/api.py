@@ -102,6 +102,18 @@ async def get_user_profile(user_id: str):
             raise HTTPException(status_code=404, detail="Profile not found")
         
         result = profile.data
+
+        # Auto-generate activation code if missing for personal role
+        if result.get("role") == "personal" and not result.get("activation_code"):
+            import random
+            code = ''.join(random.choices('0123456789abcdefABCDEF', k=8))
+            try:
+                supabase.table("profiles").update({"activation_code": code}).eq("id", user_id).execute()
+                result["activation_code"] = code
+                print(f"Auto-generated missing activation code {code} for user {user_id}")
+            except Exception as e:
+                print(f"Warning: failed to auto-generate activation_code: {e}")
+        
         result["subscribed_pos_ids"] = _get_assigned_sensor_ids(supabase, user_id, result["role"])
         
         # Get role-specific data

@@ -146,19 +146,22 @@ export function useAuth() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       setUser(null);
-      return;
+      return null;
     }
     const userId = session.user.id;
     try {
       const response = await fetchApi<ProfileApiResponse>(`/api/user/profile?user_id=${userId}`);
       if (response.status !== "success" || !response.data) {
         setUser(null);
-        return;
+        return null;
       }
-      setUser(mapProfileToUser(response.data, userId, session.user.email));
+      const baseUser = mapProfileToUser(response.data, userId, session.user.email);
+      setUser(baseUser);
+      return baseUser;
     } catch (err) {
       console.error("Error refreshing user profile:", err);
       setUser(null);
+      return null;
     }
   }, []);
 
