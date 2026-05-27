@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Minus, RotateCcw, Mountain, Compass, Droplets,
   TriangleAlert, CloudRain, Activity, Waves, ArrowUpRight, ArrowDownRight, Minus as MinusIcon,
-  X, Info, List, MapPin, CheckCircle2, Radio
+  X, Info, List, MapPin, CheckCircle2, Radio, Loader2,
 } from "lucide-react";
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useAuth } from "@/hooks/useAuth";
@@ -149,7 +149,8 @@ const Index = () => {
   const [hasDismissedAutoModal, setHasDismissedAutoModal] = useState(false);
   const navigate = useNavigate();
 
-  const { posList } = useSensorData();
+  const { posList, loading: sensorsLoading } = useSensorData();
+  const [markersReady, setMarkersReady] = useState(false);
   const { user, refreshUser } = useAuth();
   const userRole = user?.role || "community";
   const mapPadding = useMemo(
@@ -272,11 +273,24 @@ const Index = () => {
 
       <Map3D
         onMapReady={handleMapReady}
+        onMarkersReady={() => setMarkersReady(true)}
+        sensorDataReady={!sensorsLoading}
         posList={posList}
         onPosClick={flyToPos}
         homeLngLat={userRole === "personal" ? user?.homeLngLat : undefined}
         homeLabel={user?.homeAddress}
       />
+
+      {!markersReady && (
+        <div
+          className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3 bg-background/40 backdrop-blur-[2px]"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm font-medium text-foreground/80">Memuat peta dan pos pantau…</p>
+        </div>
+      )}
 
       {/* Main Panel Sidebar */}
       {panelVisible ? (
