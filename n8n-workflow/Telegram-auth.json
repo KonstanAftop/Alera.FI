@@ -506,7 +506,7 @@
           "fieldValues": [
             {
               "fieldId": "activation_code",
-              "fieldValue": "=NULL"
+              "fieldValue": "={{ null }}"
             }
           ]
         }
@@ -707,7 +707,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "153d8e26-e8af-4004-b104-38624fd4d242",
+  "versionId": "1e98bcd7-8921-4512-874c-7cabb28c956c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e3d620622b0ba9cd83a040e578ac88276a5d2a47669823a212bb044aa6edb926"
