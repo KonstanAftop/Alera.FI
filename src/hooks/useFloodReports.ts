@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
+import type { FloodSeverity } from "@/lib/floodSeverity";
 
 export interface FloodReport {
   id: string;
   community_id: string;
   location_text: string;
-  severity: "low" | "medium" | "high" | "critical";
+  severity: FloodSeverity;
   description: string | null;
   image_url: string | null;
   reported_at: string;
@@ -26,39 +27,36 @@ export function useFloodReports(communityId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchReports() {
-      try {
-        const endpoint = communityId
-          ? `/api/flood-reports?community_id=${communityId}`
-          : "/api/flood-reports";
-        
-        const response = await fetchApi<FloodReportsApiResponse>(endpoint);
+  const refetch = useCallback(async () => {
+    try {
+      const endpoint = communityId
+        ? `/api/flood-reports?community_id=${communityId}`
+        : "/api/flood-reports";
 
-        if (response.status !== "success") {
-          throw new Error("Failed to fetch flood reports");
-        }
+      const response = await fetchApi<FloodReportsApiResponse>(endpoint);
 
-        setReports(response.data || []);
-      } catch (err: any) {
-        console.error("Error fetching flood reports:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (response.status !== "success") {
+        throw new Error("Failed to fetch flood reports");
       }
+
+      setReports(response.data || []);
+      setError(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to fetch flood reports";
+      console.error("Error fetching flood reports:", err);
+      setError(message);
+    } finally {
+      setLoading(false);
     }
-
-    fetchReports();
-
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchReports, 30000);
-
-    return () => {
-      clearInterval(interval);
-    };
   }, [communityId]);
 
-  return { reports, loading, error };
+  useEffect(() => {
+    refetch();
+    const interval = setInterval(refetch, 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  return { reports, loading, error, refetch };
 }
 
 export async function addFloodReport(report: Omit<FloodReport, "id" | "reported_at">) {
