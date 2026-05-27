@@ -1,0 +1,717 @@
+{
+  "name": "Telegram-auth",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -608,
+        128
+      ],
+      "id": "4d6568a5-adef-4d10-8a0d-7c5b60aa1892",
+      "name": "Telegram Trigger",
+      "webhookId": "15aa9477-6988-4463-b036-da80d2a9d40e",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2d037b0b-dfd2-4197-8006-80834dd30f07",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -448,
+        128
+      ],
+      "id": "128b25db-c227-4539-82da-ee596dc44816",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Halo! Selamat datang di Alera FI — platform pemantauan dan peringatan dini banjir.\n\nUntuk mengaktifkan notifikasi Telegram ke akun pribadi Anda, kirim kode aktivasi 8 karakter yang Anda dapatkan dari dashboard Alera FI setelah registrasi.\n\nContoh: `A1B2C3D4`\n\nButuh bantuan? Buka dashboard atau hubungi pengelola sistem konstanaftopds@gmail.com",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a42860f6-fec5-4600-89ee-8c12a09e76e7",
+      "name": "Send a text message",
+      "webhookId": "8d36cee8-ac95-4546-bcca-3f3a0bea602f",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d7c567d9-3ee9-4a51-9ef4-1c1fd88fbf6f",
+              "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "rightValue": "^[0-9A-Fa-f]{8}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        368
+      ],
+      "id": "5fe1c5c9-c213-4994-b8ad-76787461c131",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ Akun Telegram Anda berhasil terhubung dengan Alera FI.  Mulai sekarang Anda dapat menerima peringatan dini terkait pos pantau yang Anda langgani (status Normal, Siaga, hingga kondisi kritis).  Kelola langganan stasiun dan lihat data terbaru di dashboard Alera FI.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        128
+      ],
+      "id": "fb914199-a864-4e1c-bcb1-62674201b0fc",
+      "name": "Send a text message1",
+      "webhookId": "c3be8b6a-e975-46d6-9643-a2e84c2ea70d",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "92d0ff4b-036b-48ca-a4a7-72c690f57c47",
+              "leftValue": "={{ $json.created_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        128
+      ],
+      "id": "b6ee7d5f-b7de-4c54-b304-be14d55ab173",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=❌ Kode aktivasi tidak valid.\n\nPastikan Anda mengirim kode 8 karakter (huruf dan angka) persis seperti di dashboard Alera FI, tanpa spasi.\n\nJika kode sudah pernah dipakai atau kedaluwarsa, buat kode baru dari halaman profil/dashboard Anda, lalu kirim ulang ke bot ini.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        320
+      ],
+      "id": "4519d907-d1b6-49bf-9d26-e6738888de36",
+      "name": "Send a text message2",
+      "webhookId": "e57eda66-4c3e-4ac7-bef4-ccb261f5c982",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "profiles",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "activation_code",
+              "condition": "eq",
+              "keyValue": "={{ $json.message.text }}"
+            },
+            {
+              "keyName": "role",
+              "condition": "eq",
+              "keyValue": "personal"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        176,
+        176
+      ],
+      "id": "3b4e85c7-39ff-49e8-8019-f94d57aa91ae",
+      "name": "Get many rows",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "activation_code",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.text }}"
+            },
+            {
+              "keyName": "role",
+              "condition": "eq",
+              "keyValue": "personal"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "telegram_linked",
+              "fieldValue": "TRUE"
+            },
+            {
+              "fieldId": "chat_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        560,
+        128
+      ],
+      "id": "ac2c052e-564c-48b7-b404-a6956940915a",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "de856454-51f5-405c-ab8d-66fc90efe267",
+              "leftValue": "={{ $json.message.chat.type }}",
+              "rightValue": "private",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -304,
+        464
+      ],
+      "id": "bafac1c8-aaa7-4a79-b697-f55f42fd1afd",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3d7ebc14-b351-4fc3-b93a-90167ef823e6",
+              "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "rightValue": "^/link\\s+[0-9A-Fa-f]{8}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        560
+      ],
+      "id": "acecbec6-f483-4301-8937-014b0380cba1",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract activation code from /link XXXXXXXX\nconst text = $input.item.json.message.text;\nconst match = text.match(/\\/link\\s+([0-9A-Fa-f]{8})/i);\nconst code = match ? match[1].toUpperCase() : null;\n\nreturn {\n  code: code,\n  chat_id: $input.item.json.message.chat.id,\n  chat_title: $input.item.json.message.chat.title || 'Unknown Group',\n  chat_type: $input.item.json.message.chat.type,\n  message_id: $input.item.json.message.message_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        640
+      ],
+      "id": "e7afd6be-b363-4337-87e5-625a05e7fe91",
+      "name": "Extract Code & Group Info"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://alera-fi.web.id/telegram/verify-code",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"code\": $json.code } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        384,
+        640
+      ],
+      "id": "ed1c4dd1-b1b0-4d79-83b9-c6004e87f33d",
+      "name": "Verify Code (Backend)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check-success",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "check-user-id",
+              "leftValue": "={{ $json.user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        640
+      ],
+      "id": "216bd718-7a3c-472d-9122-92b64d83b175",
+      "name": "Code Valid?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://alera-fi.web.id/telegram/link-group",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"user_id\": $json.user_id,\n  \"chat_id\": $('Extract Code & Group Info').item.json.chat_id,\n  \"chat_title\": $('Extract Code & Group Info').item.json.chat_title\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        864,
+        560
+      ],
+      "id": "5a5569f2-b054-4217-a1e0-35573163608e",
+      "name": "Link Group (Backend)"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "✅  Grup berhasil terhubung ke Alera FI\n\nGrup ini akan menerima broadcast dan notifikasi peringatan dini dari dashboard komunitas Anda.\n\n🔔 Notifikasi otomatis saat:\n• Status pos pantau berubah (Normal → Siaga 3/2/1)\n\n📊 Gunakan dashboard Alera FI untuk monitoring dan pengiriman pesan manual ke grup ini.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        560
+      ],
+      "id": "1f460c9b-b8be-4ac7-a83a-78ceb6defd25",
+      "name": "Send Success (Community)",
+      "webhookId": "ac72b83c-2127-42b9-b18e-8c7129741cdc",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ \"❌ **Kode aktivasi tidak valid — Alera FI**\\n\\n\" + ($('Verify Code (Backend)').item.json.message || 'Kode salah, sudah dipakai, atau bukan untuk akun komunitas.') + \"\\n\\nLangkah perbaikan:\\n1. Login ke dashboard Alera FI (akun komunitas)\\n2. Buat kode linking baru di menu Telegram\\n3. Kirim di grup ini: `/link KODE-BARU`\\n\\nContoh: `/link A1B2C3D4`\" }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        752
+      ],
+      "id": "cabdc381-af0c-48fc-a22d-99d2718eebf4",
+      "name": "Send Error (Community)",
+      "webhookId": "1fd04d08-51bd-4e8d-a28d-2d120421a3aa",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "activation_code",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "activation_code",
+              "fieldValue": "=NULL"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        768,
+        128
+      ],
+      "id": "d6f89ebf-d79f-445f-9882-abae950c22d5",
+      "name": "Update a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Update a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Extract Code & Group Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Extract Code & Group Info": {
+      "main": [
+        [
+          {
+            "node": "Verify Code (Backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Code (Backend)": {
+      "main": [
+        [
+          {
+            "node": "Code Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Valid?": {
+      "main": [
+        [
+          {
+            "node": "Link Group (Backend)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error (Community)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link Group (Backend)": {
+      "main": [
+        [
+          {
+            "node": "Send Success (Community)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "153d8e26-e8af-4004-b104-38624fd4d242",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e3d620622b0ba9cd83a040e578ac88276a5d2a47669823a212bb044aa6edb926"
+  },
+  "id": "TcGgapt9dZSkyJkn",
+  "tags": []
+}

@@ -1,0 +1,678 @@
+{
+  "name": "EWS-consolidate-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3/10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2608,
+        2736
+      ],
+      "id": "f726bbce-c6b6-4db9-890e-6c1132830681",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.ews_alert_queue \nSET status = 'pending', batch_id = NULL\nWHERE status = 'processing'\n  AND recipient_type = 'personal'\n  AND created_at < NOW() - INTERVAL '12 minutes';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2320,
+        2112
+      ],
+      "id": "7149f774-33ca-4bc2-9b10-a7d354315519",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH new_batch AS (\n    SELECT gen_random_uuid() AS id\n),\nupdated_rows AS (\n    UPDATE public.ews_alert_queue \n    SET status = 'processing', batch_id = (SELECT id FROM new_batch)\n    WHERE status = 'pending'\n      AND recipient_type = 'personal'\n    RETURNING batch_id\n)\nSELECT batch_id FROM updated_rows LIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2112,
+        2112
+      ],
+      "id": "7854c4ce-58e0-40da-93a5-cd9606d900b0",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM public.v_alert_context \nWHERE queue_status = 'processing' \n  AND batch_id = '{{ $json.batch_id || \"00000000-0000-0000-0000-000000000000\" }}'::uuid;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1904,
+        2112
+      ],
+      "id": "7eff8732-a362-45e9-b183-bee58d0b9adc",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json);\nconst groupedByUser = {};\n\nfor (const row of rows) {\n  const userId = row.user_id;\n  \n  if (!groupedByUser[userId]) {\n    groupedByUser[userId] = {\n      user_id: userId,\n      destination_chat_id: row.destination_chat_id,\n      risk_profile: row.risk_profile,\n      distance_to_river: row.distance_to_river,\n      location_lat: row.location_lat,\n      location_lng: row.location_lng,\n      queue_ids: [],\n      sensors: []\n    };\n  }\n  \n  if (!groupedByUser[userId].location_lat && row.location_lat) {\n    groupedByUser[userId].location_lat = row.location_lat;\n  }\n  if (!groupedByUser[userId].location_lng && row.location_lng) {\n    groupedByUser[userId].location_lng = row.location_lng;\n  }\n  \n  groupedByUser[userId].queue_ids.push(row.queue_id);\n  \n  // MASUKKAN DI SINI: Bungkus data spasial spesifik terhadap alat sensor tersebut\n  groupedByUser[userId].sensors.push({\n    sensor_id: row.sensor_id,\n    pos_name: row.pos_name,\n    sensor_type: row.sensor_type,\n    current_value: row.current_value,\n    current_warning_level: row.current_warning_level,\n    previous_warning_level: row.previous_warning_level,\n    trend_3h: row.trend_3h,\n    measured_at: row.measured_at,\n    // Dua baris ini wajib diloloskan:\n    sensor_distance_km: row.sensor_distance_km,\n    sensor_elevation_diff: row.sensor_elevation_diff\n  });\n}\n\nreturn Object.keys(groupedByUser).map(userId => ({\n  json: groupedByUser[userId]\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        2112
+      ],
+      "id": "e004316a-ba02-4158-8182-260672eb4bdf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "642ff620-c33e-493b-a93e-02b06d60c54f",
+              "leftValue": "={{ $json.destination_chat_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "dfd74709-0eef-42fb-8c6a-48efa63582c4",
+              "leftValue": "={{ $json.risk_profile }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1456,
+        2112
+      ],
+      "id": "7572da09-ed21-43b3-b4bf-79274f64634e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.ews_alert_queue \nSET status = 'failed', error_message = 'Profile data incomplete or Telegram chat_id unlinked'\nWHERE id IN ({{ $json.queue_ids.map(id => \"'\" + id + \"'\").join(',') }});",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -928,
+        2528
+      ],
+      "id": "1f282921-8e7a-4734-8cea-86ad959d3575",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "latitude",
+              "value": "={{ $json.location_lat }}"
+            },
+            {
+              "name": "longitude",
+              "value": "={{ $json.location_lng }}"
+            },
+            {
+              "name": "current",
+              "value": "rain,weather_code"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -896,
+        2128
+      ],
+      "id": "2a6d2fcc-284d-4ede-88c5-a40a868fb83b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. Ambil data mentah dari node sebelumnya\nconst user = $('If').item.json;\nconst weatherNode = $('HTTP Request').item.json;\n\n// 2. Kamus Resmi Kode Cuaca WMO Open-Meteo\nconst wmoCodes = {\n  0: \"Cerah (Clear sky)\",\n  1: \"Cerah Berawan (Mainly clear)\",\n  2: \"Berawan Sebagian (Partly cloudy)\",\n  3: \"Mendung Total (Overcast)\",\n  45: \"Kabut (Fog)\",\n  48: \"Kabut Rime (Depositing rime fog)\",\n  51: \"Gerimis Ringan (Light drizzle)\",\n  53: \"Gerimis Sedang (Moderate drizzle)\",\n  55: \"Gerimis Lebat (Dense drizzle)\",\n  56: \"Gerimis Membeku Ringan\",\n  57: \"Gerimis Membeku Lebat\",\n  61: \"Hujan Intensitas Ringan (Slight rain)\",\n  63: \"Hujan Intensitas Sedang (Moderate rain)\",\n  65: \"Hujan Lebat/Sangat Deras (Heavy rain)\",\n  66: \"Hujan Membeku Ringan\",\n  67: \"Hujan Membeku Lebat\",\n  71: \"Hujan Salju Ringan\",\n  73: \"Hujan Salju Sedang\",\n  75: \"Hujan Salju Lebat\",\n  77: \"Butiran Salju\",\n  80: \"Hujan Pancar Ringan (Slight rain showers)\",\n  81: \"Hujan Pancar Sedang (Moderate rain showers)\",\n  82: \"Hujan Pancar Ekstrim/Sangat Deras (Violent rain showers)\",\n  85: \"Hujan Badai Salju Ringan\",\n  86: \"Hujan Badai Salju Lebat\",\n  95: \"Hujan Badai Disertai Petir (Thunderstorm)\",\n  96: \"Hujan Badai Petir Es Ringan\",\n  99: \"Hujan Badai Petir Es Lebat\"\n};\n\n// 3. Saring Sensor (Ambil kondisi paling terbaru per sensor_id)\nconst latestSensors = {};\nfor (const s of user.sensors) {\n  if (!latestSensors[s.sensor_id] || new Date(s.measured_at) > new Date(latestSensors[s.sensor_id].measured_at)) {\n    latestSensors[s.sensor_id] = s;\n  }\n}\n\n// 4. Terjemahkan Data Cuaca secara Dinamis\nlet weatherString = \"Data cuaca tidak tersedia.\";\nif (weatherNode && weatherNode.current) {\n  const rainAmt = weatherNode.current.rain;\n  const code = weatherNode.current.weather_code;\n  const weatherDesc = wmoCodes[code] || \"Hujan/Berawan\"; \n  weatherString = `Kondisi: ${weatherDesc}, Curah Hujan Lokal: ${rainAmt} mm`;\n}\n\n// 5. Kembalikan Payload Bersih Siap Konsumsi untuk OpenAI\nreturn {\n  json: {\n    destination_chat_id: user.destination_chat_id,\n    risk_profile: user.risk_profile,\n    distance_to_river_m: (user.distance_to_river * 1000).toFixed(0),\n    weather_info: weatherString,\n    processed_sensors: Object.values(latestSensors)\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        2128
+      ],
+      "id": "6c63cce2-2f42-4810-8f41-4421b8343faf",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "deepseek-v4-flash",
+          "mode": "list",
+          "cachedResultName": "DEEPSEEK-V4-FLASH"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Kamu adalah asisten peringatan dini banjir ALERA FI. Kirim pesan via Telegram DM ke satu warga per rumah tangga. Tulis seperti bot yang dipersonalisasi — bukan notifikasi generik, Dituliskan dalam bentuk paragraf naratif beserta poin poin.\n\nDATA:\n- Profil risiko: {{ $json.risk_profile }}\n- Jarak ke sungai: {{ $json.distance_to_river_m }} m\n- Cuaca satelit: {{ $json.weather_info }}\n- Sensor: {{ JSON.stringify($json.processed_sensors) }}\n\nATURAN:\n- Bahasa Indonesia saja.\n- Hanya gunakan data di atas. Jangan karang angka, cuaca, jarak, atau nama pos.\n- Nada: level naik → tegas & darurat; level turun/Normal → menenangkan tapi tetap waspada.\n- Sensor rf + wl → gabung dalam 1 pesan koheren.\n- Tidak ada sub-judul, salam pembuka, atau kata \"AI/model/sistem otomatis/JSON\".\n- Format Markdown (bold, newline). Bold HANYA untuk urgensi. Gunakan emoji sebagai penanda visual.\n- Maks ~300 kata.\n\nLEVEL:\n0 = Normal\n1 = Siaga 3 — Waspada\n2 = Siaga 2 — Bersiap\n3 = Siaga 1 — Darurat\n\nOUTPUT:\n\n🚨 *ALERA FI : FEWS* 🚨\n\nTulis 2–3 kalimat naratif:\n→ Dampak perubahan level sensor & artinya bagi rumah ini\n→ Tindakan konkret sekarang sesuai level, jarak, & profil risiko:\n  • [tindakan 1]\n  • [tindakan 2: amankan dokumen, listrik, barang berharga]\n  • [tindakan 3: evakuasi jika diperlukan]\n\nTulis 2 kalimat naratif:\n→ Kondisi cuaca terkini dari data satelit\n→ Kondisi pos pantau sungai dikaitkan dengan jarak rumah ke sungai\n\nTulis narasi potensi bahaya, lalu poin:\n  • Perubahan status pos pantau beserta tren level-nya\n  • Posisi elevasi: diff >50m → pos di hulu (risiko kiriman air); diff <50m → pos di hilir/setara (risiko genangan lokal)\n  • Jarak ke pos pantau dalam km — jika dekat (<5 km) sebutkan potensi dampak lebih cepat sampai; jika jauh (>5 km) sebutkan masih ada waktu untuk bersiap\n\nTulis 1 kalimat realistis (menenangkan jika level turun; tegas jika tinggi), diikuti:\n  • 🕐 Waktu pengukuran: [ISO Z + 7 jam → WIB]\n  • 📍 Pos pantau: [nama pos yang berubah]"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -464,
+        2128
+      ],
+      "id": "1c934653-b9d7-4371-a2b4-1d4d2ad3316e",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "kVyfgHcezIlw2FoX",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Code in JavaScript1').item.json.destination_chat_id }}",
+        "text": "={{ $json.output[0].content[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        2128
+      ],
+      "id": "d5f325a0-a082-4e72-87f2-580696c2f61c",
+      "name": "Send a text message",
+      "webhookId": "78f8cd9f-4c4f-4c64-b185-27cfe58ef338",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- 1. Bersihkan status antrean menjadi selesai\nUPDATE public.ews_alert_queue \nSET status = 'sent'\nWHERE id IN ({{ $('Code in JavaScript').item.json.queue_ids.map(id => \"'\" + id + \"'\").join(',') }});\n\n-- 2. Tulis jejak pengiriman ke riwayat log\nINSERT INTO public.notification_log (user_id, sensor_id, warning_level, message_text, channel)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.user_id }}',\n  '{{ $('Code in JavaScript1').item.json.processed_sensors[0].sensor_id }}',\n  {{ $('Code in JavaScript1').item.json.processed_sensors[0].current_warning_level }},\n  '{{ $json.result.text.replace(/'/g, \"''\") }}',\n  'telegram_dm'::text\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        96,
+        2128
+      ],
+      "id": "6e010e91-6289-426f-9632-d366d7fcf3a7",
+      "name": "Execute a SQL query3",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.ews_alert_queue\nSET status = 'pending', batch_id = NULL\nWHERE status = 'processing'\n  AND recipient_type = 'community'\n  AND created_at < NOW() - INTERVAL '12 minutes';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2368,
+        2864
+      ],
+      "id": "01130d1b-7cac-43c7-a3d5-fa4681605a73",
+      "name": "Execute a SQL query5",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH new_batch AS (\n    SELECT gen_random_uuid() AS id\n),\nupdated_rows AS (\n    UPDATE public.ews_alert_queue q\n    SET status = 'processing',\n        batch_id = (SELECT id FROM new_batch)\n    FROM public.community_profiles cp\n    WHERE cp.user_id = q.user_id\n      AND q.status = 'pending'\n      AND q.recipient_type = 'community'\n      AND cp.telegram_group_id IS NOT NULL\n      AND cp.auto_alert_enabled = true\n    RETURNING q.batch_id\n)\nSELECT batch_id FROM updated_rows LIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2160,
+        2864
+      ],
+      "id": "9758544a-dee5-44e4-8e31-16a43ba380fd",
+      "name": "Execute a SQL query6",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  q.id AS queue_id,\n  q.user_id AS community_id,\n  q.sensor_id,\n  q.old_level,\n  q.new_level,\n  q.value,\n  q.trend_3h,\n  q.measured_at,\n  q.batch_id,\n  q.status AS queue_status,\n\n  cp.community_name,\n  cp.telegram_group_id AS destination_chat_id,\n  cp.telegram_group_title,\n  cp.auto_alert_enabled,\n\n  im.pos_name,\n  im.sensor_type\nFROM public.ews_alert_queue q\nJOIN public.community_profiles cp ON cp.user_id = q.user_id\nJOIN public.instrument_metadata im ON im.sensor_id = q.sensor_id\nWHERE q.status = 'processing'\n  AND q.recipient_type = 'community'\n  AND q.batch_id = '{{ $json.batch_id || \"00000000-0000-0000-0000-000000000000\" }}'::uuid\n  AND cp.telegram_group_id IS NOT NULL\n  AND cp.auto_alert_enabled = true;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1952,
+        2864
+      ],
+      "id": "baf78d93-ebfb-4bfe-8788-39ef104f7486",
+      "name": "Execute a SQL query7",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json);\nconst grouped = {};\n\nfor (const row of rows) {\n  const communityId = row.community_id;\n\n  if (!grouped[communityId]) {\n    grouped[communityId] = {\n      community_id: communityId,\n      community_name: row.community_name,\n      destination_chat_id: row.destination_chat_id,\n      telegram_group_title: row.telegram_group_title,\n      queue_ids: [],\n      sensors: [],\n    };\n  }\n\n  grouped[communityId].queue_ids.push(row.queue_id);\n\n  grouped[communityId].sensors.push({\n    sensor_id: row.sensor_id,\n    pos_name: row.pos_name,\n    sensor_type: row.sensor_type,\n    old_level: Number(row.old_level),\n    new_level: Number(row.new_level),\n    value: row.value,\n    trend_3h: row.trend_3h || 'stabil',\n    measured_at: row.measured_at,\n  });\n}\n\nreturn Object.values(grouped).map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1744,
+        2864
+      ],
+      "id": "8c623135-5b45-4c4c-bc59-a6de95f94a6c",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a480f57b-4916-409c-8d00-263c9ca3f701",
+              "leftValue": "={{ $json.destination_chat_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1536,
+        2864
+      ],
+      "id": "6e72d7a9-fea2-44b6-94ec-047102fc458f",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\n\nconst levelText = (n) => ['Normal', 'Siaga 3', 'Siaga 2', 'Siaga 1'][Number(n)] ?? '?';\nconst levelEmoji = (n) => ['🟢', '🟡', '🟠', '🔴'][Number(n)] ?? '⚪';\n\nfunction formatWib(iso) {\n  if (!iso) return '-';\n  return new Date(iso).toLocaleString('id-ID', {\n    timeZone: 'Asia/Jakarta',\n    dateStyle: 'medium',\n    timeStyle: 'short',\n  }) + ' WIB';\n}\n\nconst latestBySensor = {};\n\nfor (const sensor of data.sensors) {\n  const existing = latestBySensor[sensor.sensor_id];\n  if (!existing || new Date(sensor.measured_at) > new Date(existing.measured_at)) {\n    latestBySensor[sensor.sensor_id] = sensor;\n  }\n}\n\nconst sensors = Object.values(latestBySensor);\n\nconst lines = sensors.map((s) => {\n  const trendIcon =\n    s.trend_3h === 'naik' ? '⬆️' :\n    s.trend_3h === 'turun' ? '⬇️' :\n    '➡️';\n\n  const unit = s.sensor_type === 'rf' ? 'mm/jam' : 'm';\n\n  return `${levelEmoji(s.new_level)} *${s.pos_name}*\\n` +\n    `Status: ${levelText(s.old_level)} → ${levelText(s.new_level)}\\n` +\n    `Nilai: ${s.value} ${unit}\\n` +\n    `Trend 3 jam: ${trendIcon} ${s.trend_3h}\\n` +\n    `Waktu ukur: ${formatWib(s.measured_at)}`;\n}).join('\\n\\n');\n\nconst text =\n  `🚨 *ALERA FI : ALERT KOMUNITAS* 🚨\\n\\n` +\n  `Terdapat perubahan status pos pantau untuk komunitas *${data.community_name || '-'}*:\\n\\n` +\n  `${lines}\\n\\n` +\n  `Mohon pantau kondisi lapangan dan koordinasikan dengan warga sekitar.\\n\\n` ;\n\nreturn {\n  json: {\n    ...data,\n    telegram_text: text,\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        2768
+      ],
+      "id": "5a191d84-2afc-43d8-a42a-1f1cb4161e2a",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.destination_chat_id }}",
+        "text": "={{ $json.telegram_text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1104,
+        2768
+      ],
+      "id": "2803f350-9fb7-40cc-a573-9630c205997a",
+      "name": "Send a text message1",
+      "webhookId": "57ba3a4f-4411-41ca-a913-4e85e8f7fcb2",
+      "credentials": {
+        "telegramApi": {
+          "id": "MEa6FwTYKgBJ5x9d",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.ews_alert_queue\nSET status = 'sent'\nWHERE id IN ({{ $('Code in JavaScript3').item.json.queue_ids.map(id => \"'\" + id + \"'\").join(',') }});\n\nINSERT INTO public.notification_log (user_id, sensor_id, warning_level, message_text, channel)\nSELECT\n  '{{ $('Code in JavaScript3').item.json.community_id }}'::uuid,\n  sensor.sensor_id,\n  sensor.new_level::integer,\n  '{{ $('Code in JavaScript3').item.json.telegram_text.replace(/'/g, \"''\") }}',\n  'telegram_channel'::text\nFROM jsonb_to_recordset('{{ JSON.stringify($('Code in JavaScript3').item.json.sensors).replace(/'/g, \"''\") }}'::jsonb)\nAS sensor(sensor_id text, new_level integer);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -848,
+        2768
+      ],
+      "id": "2da2b273-a60a-4e3a-800f-8dd9a9974593",
+      "name": "Execute a SQL query8",
+      "credentials": {
+        "postgres": {
+          "id": "GbrP3uPajZyK9IAN",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query4": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query5": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query6": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query7": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ab28dfef-f37e-4292-9eaa-6f13a39e34d1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e3d620622b0ba9cd83a040e578ac88276a5d2a47669823a212bb044aa6edb926"
+  },
+  "id": "ZnTD0DK2LRjd86s3",
+  "tags": []
+}

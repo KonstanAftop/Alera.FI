@@ -1,0 +1,1097 @@
+{
+  "name": "ETL-Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -848,
+        -272
+      ],
+      "id": "3b325a5f-d6fd-45fd-b467-b5fbea105d0a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jagabalai.higertech.com/Home/GetDatatableArrLastReading",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/x-www-form-urlencoded; charset=UTF-8\",\n  \"X-Requested-With\": \"XMLHttpRequest\",\n  \"Referer\": \"https://jagabalai.higertech.com/Home/TabelMonitoring\",\n  \"Accept\": \"application/json, text/javascript, */*; q=0.01\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"start\": 0,\n  \"length\": -1,\n  \"search\": {\n    \"value\": \"\",\n    \"regex\": false\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -640,
+        -272
+      ],
+      "id": "c5242128-73cc-4131-b2df-c0172015a67a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -848,
+        -32
+      ],
+      "id": "58bdba69-b12c-41fe-8363-3c34395e4fb9",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "url": "https://hkabbwscitarum.higertech.com/Home/GetAwlrLastReading",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,id;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Referer",
+              "value": "https://hkabbwscitarum.higertech.com/Home/TabelMonitoring"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-origin"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?1"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"iOS\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -640,
+        -32
+      ],
+      "id": "a2cc6b8f-2d2e-4d45-a4e8-da416e39d0cc",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -848,
+        192
+      ],
+      "id": "79625f3f-8324-4f69-bca9-1fc12627d1d1",
+      "name": "Schedule Trigger2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hkabbwscitarum.higertech.com/Home/GetDatatableArrLastReading",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"accept\": \"application/json, text/javascript, */*; q=0.01\",\n  \"accept-language\": \"en-US,en;q=0.9,id;q=0.8\",\n  \"content-type\": \"application/x-www-form-urlencoded; charset=UTF-8\",\n  \"sec-ch-ua-platform\": \"\\\"iOS\\\"\",\n  \"x-requested-with\": \"XMLHttpRequest\"\n}",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "string",
+        "body": "draw=1&columns[0][data]=name&columns[0][name]=name&columns[0][searchable]=true&columns[0][orderable]=false&columns[0][search][value]=&columns[0][search][regex]=false&start=0&length=50&search[value]=&search[regex]=false",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -640,
+        192
+      ],
+      "id": "af12b84d-227e-476f-b53a-0b55f0185dbd",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -864,
+        384
+      ],
+      "id": "6a773889-d432-41bf-ba7a-8a1b9eb026da",
+      "name": "Schedule Trigger3"
+    },
+    {
+      "parameters": {
+        "url": "https://bpbdkabbandung.higertech.com/Home/GetAwlrLastReading",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "accept-language",
+              "value": "en-US,en;q=0.9,id;q=0.8"
+            },
+            {
+              "name": "priority",
+              "value": "u=1, i"
+            },
+            {
+              "name": "referer",
+              "value": "https://bpbdkabbandung.higertech.com/Home/TabelMonitoring"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?1"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Android\""
+            },
+            {
+              "name": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "name": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "name": "sec-fetch-site",
+              "value": "same-origin"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -656,
+        384
+      ],
+      "id": "6390f608-8d06-4ab2-bd77-869472d3809f",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2-59/10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -960,
+        592
+      ],
+      "id": "5b991f04-ff3e-4041-9e9e-89b9de2939a5",
+      "name": "Schedule Trigger4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ffws-bbwscitarum.id/rainfall/Mst/ymdhm",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "accept-language",
+              "value": "en-US,en;q=0.9,id;q=0.8"
+            },
+            {
+              "name": "origin",
+              "value": "https://ffws-bbwscitarum.id"
+            },
+            {
+              "name": "priority",
+              "value": "u=1, i"
+            },
+            {
+              "name": "referer",
+              "value": "https://ffws-bbwscitarum.id/page/dashboard/dashboard"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?1"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Android\""
+            },
+            {
+              "name": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "name": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "name": "sec-fetch-site",
+              "value": "same-origin"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "now",
+              "value": "={{ $now.setZone('Asia/Jakarta').set({ minute: Math.floor($now.setZone('Asia/Jakarta').minute / 10) * 10, second: 0 }).toFormat('yyyyMMddHHmm') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        592
+      ],
+      "id": "e01ee901-069a-4b72-8105-bd1b59939150",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2-59/10 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -976,
+        800
+      ],
+      "id": "93e7f430-f54c-49ef-866c-1a8fa36f7836",
+      "name": "Schedule Trigger5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.ffws-bbwscitarum.id/waterlevel/Mst/{{ $now.setZone('Asia/Jakarta').set({ minute: Math.floor($now.setZone('Asia/Jakarta').minute / 10) * 10, second: 0 }).toFormat('yyyyMMddHHmm') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,id;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Content-Length",
+              "value": "0"
+            },
+            {
+              "name": "Origin",
+              "value": "https://ffws-bbwscitarum.id"
+            },
+            {
+              "name": "Referer",
+              "value": "https://ffws-bbwscitarum.id/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-site"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?1"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Android\""
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "now",
+              "value": "={{ $now.setZone('Asia/Jakarta').set({ minute: Math.floor($now.setZone('Asia/Jakarta').minute / 10) * 10, second: 0 }).toFormat('yyyyMMddHHmm') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        800
+      ],
+      "id": "7a698fda-1680-4c3e-9ff7-6b350dcc3404",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil array data dari struktur bersarang\nconst inputData = $input.first().json.data;\n\nreturn inputData.map(item => {\n  const rf = item.rainfall;\n  \n  // Klasifikasi warning_level (0-3)\n  let level = 0;\n  if (rf >= 20) level = 3;      // Sangat Lebat\n  else if (rf >= 10) level = 2; // Lebat\n  else if (rf >= 5) level = 1;  // Sedang\n  else level = 0;               // Ringan/Normal\n\n  return {\n    json: {\n      sensor_id: item.deviceId,\n      sensor_type: \"rainfall\", \n      pos_name: item.name,\n      value: rf,\n      warning_level: level,\n      measured_at: item.readingAt\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -272
+      ],
+      "id": "a4cb54be-af7c-44e7-afb1-00c3b1f47454",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil array dari properti 'response'\nconst inputData = $input.first().json.response;\n\n// 2. Daftar nama pos yang ingin dikecualikan\nconst excludedNames = [\n  \"PDA SADU\",\n  \"PDA TERAS CIKAPUNDUNG\",\n  \"PCH CIPEUSING\",\n  \"PCH Dampit\",\n  \"PCH CISOMANG\",\n  \"PDA PEUNDEUY\"\n];\n\n// 3. Filter data untuk membuang nama yang ada di daftar exclude, lalu mapping hasilnya\nreturn inputData\n  .filter(item => !excludedNames.includes(item.name)) // Menghapus data jika namanya ada di list\n  .map(item => {\n    const wl = item.waterLevel;\n    const s1 = item.siaga1;\n    const s2 = item.siaga2;\n    const s3 = item.siaga3;\n    \n    // Kalkulasi Warning Level berdasarkan Threshold (0-3)\n    let calculatedLevel = 0; \n    if (s1 !== null && wl >= s1) {\n      calculatedLevel = 3; // Paling Bahaya\n    } else if (s2 !== null && wl >= s2) {\n      calculatedLevel = 2;\n    } else if (s3 !== null && wl >= s3) {\n      calculatedLevel = 1;\n    }\n\n    return {\n      json: {\n        sensor_id: item.deviceId,\n        sensor_type: \"water_level\",\n        pos_name: item.name,\n        value: wl,\n        warning_level: calculatedLevel,\n        measured_at: item.readingAt,\n      }\n    };\n  });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -32
+      ],
+      "id": "ae5921a1-2c7b-4f80-b94b-d63901fc256f",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json.data;\n\n// 2. Daftar nama pos yang ingin dikecualikan\nconst excludedNames = [\n  \"PDA SADU\",\n  \"PDA TERAS CIKAPUNDUNG\",\n  \"PCH CIPEUSING\",\n  \"PCH Dampit\",\n  \"PCH CISOMANG\"\n];\n\n// 3. Filter data terlebih dahulu, baru lakukan mapping klasifikasi\nreturn inputData\n  .filter(item => !excludedNames.includes(item.name)) // Mengecualikan nama yang ada di daftar\n  .map(item => {\n    const rainfall = item.rainfallLastHour;\n    let level = 0; // Default: Normal\n\n    // Logika Klasifikasi\n    if (rainfall >= 20) {\n      level = 3; // Sangat Lebat\n    } else if (rainfall >= 10) {\n      level = 2; // Sedang\n    } else if (rainfall >= 5) {\n      level = 1; // Ringan\n    } else {\n      level = 0; // Normal / Berawan\n    }\n\n    return {\n      json: {\n        sensor_id: item.deviceId,\n        sensor_type: \"rainfall\",\n        pos_name: item.name,\n        value: rainfall,\n        warning_level: level,\n        measured_at: item.readingAt\n      }\n    };\n  });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        192
+      ],
+      "id": "c1cd9c3a-94f1-4a81-a92e-8e1561c13995",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil array dari properti 'response'\nconst inputData = $input.first().json.response\n\nreturn inputData.map(item => {\n  const wl = item.waterLevel;\n  const s1 = item.siaga1;\n  const s2 = item.siaga2;\n  const s3 = item.siaga3;\n  \n  // Kalkulasi Warning Level manual berdasarkan threshold siaga\n  let calculatedLevel = 0; \n  if (s1 !== null && wl >= s1) {\n    calculatedLevel = 3; // Siaga 1\n  } else if (s2 !== null && wl >= s2) {\n    calculatedLevel = 2; // Siaga 2\n  } else if (s3 !== null && wl >= s3) {\n    calculatedLevel = 1; // Siaga 3\n  }\n\n  return {\n    json: {\n      // Identifikasi Utama\n      sensor_id: item.deviceId,\n      sensor_type: \"water_level\",\n      pos_name: item.name,\n      \n      // Data Utama\n      value: wl,\n      warning_level: calculatedLevel,\n      measured_at: item.readingAt,\n      \n      \n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        384
+      ],
+      "id": "bf8c5bca-ebd8-4731-954f-384a352971c3",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil data transaksi dari node sebelumnya\nconst transactions = ($input.first().json.resultData) ? $input.first().json.resultData : [];\n\n// 2. Kamus Mapping\nconst sensorMaster = {\n      \"206014004\": \"Paseh-Cipaku\",\n      \"206014019\": \"Kertasari\",\n      \"206014032\": \"Cicalengka\",\n      \"206014034\": \"Ancolmekar\",\n      \"206014201\": \"Ciluluk\",\n      \"206014202\": \"BD. Wangisagara\",\n      \"206024008\": \"Meteo-Lembang\",\n      \"206024016\": \"Rancaekek\",\n      \"206024020\": \"Dago Pakar\",\n      \"206024022\": \"Sapan\",\n      \"206024024\": \"Cidurian (Balai ARR)\",\n      \"206024201\": \"Kiarapayung\",\n      \"206024202\": \"Mekarmanik\",\n      \"206024203\": \"Hulu Cidurian\",\n      \"206024204\": \"Cikapundung RS.\",\n      \"206034005\": \"Cisondari-Pasirjambu\",\n      \"206034023\": \"Hantap\",\n      \"206034026\": \"Dayeuhkolot\",\n      \"206034201\": \"Nanjung\",\n      \"206034202\": \"Cimahi\",\n      \"206034203\": \"Cileunca\",\n      \"206034204\": \"Alamendah\",\n      \"206034205\": \"Sarijadi\",\n      \"206054201\": \"Cisokan\",\n      \"206054202\": \"Gunung Halu\",\n      \"206054203\": \"Tagog Apu\",\n      \"206054204\": \"Cinangsi\",\n      \"206054205\": \"Cipanas\",\n      \"206054206\": \"Hulu Cirata\",\n      \"206064201\": \"Cikalong Kulon\",\n      \"206064202\": \"Galumpit\",\n      \"206074201\": \"Cibeet Bendung\",\n      \"206074202\": \"Karang Haur\",\n      \"206074203\": \"Teluk Bango\",\n      \"206074204\": \"Rawamerta\",\n      \"206074205\": \"Kantor Curug\",\n      \"206074206\": \"Pangkalan\",\n      \"206074207\": \"Cipamingkis PJT II\",\n      \"206074208\": \"Buana Jaya\",\n      \"206164201\": \"Talun Jaya\",\n      \"206174201\": \"BD. Barugbug\",\n      \"206174202\": \"Campaka\",\n      \"206194201\": \"Sukamandi\",\n      \"206194202\": \"Kaliangsana\",\n      \"206234201\": \"BD. Salamdarma\",\n      \"206234202\": \"Sanca\",\n      \"206234203\": \"Cibuluh\",\n      \"206234204\": \"Gembor\",\n      \"206274201\": \"Bongas\",\n      \"206024014\": \"Jatiroke-Cikuda\"\n    };\n\n\nreturn transactions.filter(item => sensorMaster.hasOwnProperty(String(item.rfobscd)))\n  .map(item => {\n    const rawId = String(item.rfobscd);\n    const rawTime = String(item.ymdhm || \"\");\n    \n    let formattedTime = new Date().toISOString();\n    \n    if (rawTime && rawTime.length === 12) {\n      const y = rawTime.substring(0,4);\n      const m = rawTime.substring(4,6);\n      const d = rawTime.substring(6,8);\n      const hh = rawTime.substring(8,10);\n      const mm = rawTime.substring(10,12);\n      formattedTime = `${y}-${m}-${d}T${hh}:${mm}:00Z`;\n    }\n\n    const rfRaw = parseFloat(item.rf) || 0;\n    const rfHourly = rfRaw * 6;\n\n    let level = 0;\n    if (rfHourly >= 20) {\n      level = 3; // Sangat Lebat\n    } else if (rfHourly >= 10) {\n      level = 2; // Sedang\n    } else if (rfHourly >= 5) {\n      level = 1; // Ringan\n    } else {\n      level = 0; // Normal\n    }\n\n    return {\n      json: {\n        sensor_id: rawId,\n        sensor_type: \"rainfall\",\n        pos_name: sensorMaster[rawId],\n        value: rfHourly,\n        warning_level: level,\n        measured_at: formattedTime,\n      }\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        592
+      ],
+      "id": "f43fb474-8534-4e37-a672-bbdb0a8a3eae",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil data transaksi dari node sebelumnya\nconst transactions = ($input.first().json.resultData) ? $input.first().json.resultData : [];\n\n// 2. Kamus Ambang Batas (Threshold) Water Level\nconst wlMaster = {\n  \"206016005\": { \"name\": \"Majalaya\", \"step1\": 3.81, \"step2\": 4.11, \"step3\": 4.51 },\n  \"206016030\": { \"name\": \"Solokan Jeruk\", \"step1\": 4.21, \"step2\": 4.51, \"step3\": 4.91 },\n  \"206016201\": { \"name\": \"Cirasea\", \"step1\": 3.88, \"step2\": 4.18, \"step3\": 4.58 },\n  \"206026019\": { \"name\": \"Kompl. Radio\", \"step1\": 0.81, \"step2\": 1.11, \"step3\": 1.51 },\n  \"206026028\": { \"name\": \"BBWS Citarum\", \"step1\": 1.96, \"step2\": 2.26, \"step3\": 2.66 },\n  \"206026029\": { \"name\": \"Sapan\", \"step1\": 2.87, \"step2\": 3.17, \"step3\": 3.57 },\n  \"206026201\": { \"name\": \"Cicadas\", \"step1\": 4.23, \"step2\": 4.53, \"step3\": 4.93 },\n  \"206026202\": { \"name\": \"JB. Baleendah\", \"step1\": 3.29, \"step2\": 3.59, \"step3\": 3.99 },\n  \"206026203\": { \"name\": \"Cikapundung kolot\", \"step1\": 3.82, \"step2\": 4.12, \"step3\": 4.52 },\n  \"206026204\": { \"name\": \"Cikeruh Tegalluar\", \"step1\": 1.75, \"step2\": 2.05, \"step3\": 2.45 },\n  \"206026205\": { \"name\": \"Cipamokolan\", \"step1\": 2.69, \"step2\": 2.99, \"step3\": 3.39 },\n  \"206036002\": { \"name\": \"Nanjung\", \"step1\": 3.6, \"step2\": 3.9, \"step3\": 4.3 },\n  \"206036003\": { \"name\": \"Dayeuhkolot\", \"step1\": 5.96, \"step2\": 6.26, \"step3\": 6.66 },\n  \"206036010\": { \"name\": \"Kamasan\", \"step1\": 4.17, \"step2\": 4.47, \"step3\": 4.87 },\n  \"206036201\": { \"name\": \"Citalugtug\", \"step1\": 0.94, \"step2\": 1.24, \"step3\": 1.64 },\n  \"206036202\": { \"name\": \"Ciranjeng\", \"step1\": 5.83, \"step2\": 6.13, \"step3\": 6.53 },\n  \"206036203\": { \"name\": \"JB. Ciseah\", \"step1\": 4.3, \"step2\": 5.47, \"step3\": 5.8 },\n  \"206036204\": { \"name\": \"M.B Muttaqien\", \"step1\": 2.09, \"step2\": 2.39, \"step3\": 2.79 },\n  \"206076201\": { \"name\": \"JB. Cariu Loji\", \"step1\": 7.59, \"step2\": 7.89, \"step3\": 8.29 },\n  \"206076202\": { \"name\": \"SP. Cibeet\", \"step1\": 12.42, \"step2\": 12.54, \"step3\": 12.94 },\n  \"206076203\": { \"name\": \"Cipamingkis\", \"step1\": 8.13, \"step2\": 8.43, \"step3\": 8.83 },\n  \"206076204\": { \"name\": \"Tanjungpura\", \"step1\": 9.12, \"step2\": 9.42, \"step3\": 9.82 },\n  \"206076205\": { \"name\": \"JB. Muara Gembong\", \"step1\": 7.06, \"step2\": 7.36, \"step3\": 7.76 },\n  \"206076206\": { \"name\": \"Cabangbungin\", \"step1\": 8.57, \"step2\": 8.87, \"step3\": 9.27 },\n  \"206076207\": { \"name\": \"Cikao\", \"step1\": 6.88, \"step2\": 7.18, \"step3\": 7.58 },\n  \"206176201\": { \"name\": \"Gempol Ciherang\", \"step1\": 3.64, \"step2\": 3.94, \"step3\": 4.34 },\n  \"206176202\": { \"name\": \"JB. Cilamaya\", \"step1\": 7.36, \"step2\": 7.66, \"step3\": 8.06 },\n  \"206196201\": { \"name\": \"JB. Pantura Ciasem\", \"step1\": 6.93, \"step2\": 7.23, \"step3\": 7.63 },\n  \"206196202\": { \"name\": \"SP. Tanjungsari\", \"step1\": 7.05, \"step2\": 7.35, \"step3\": 7.75 },\n  \"206236201\": { \"name\": \"JB. Cipunagara\", \"step1\": 6.81, \"step2\": 7.11, \"step3\": 7.51 },\n  \"206236202\": { \"name\": \"JB. Sanca\", \"step1\": 7.3, \"step2\": 7.6, \"step3\": 8 },\n  \"206236203\": { \"name\": \"Cibuluh\", \"step1\": 1.86, \"step2\": 2.16, \"step3\": 2.56 }\n};\n\nreturn transactions\n  .filter(item => wlMaster.hasOwnProperty(String(item.wlobscd))) \n  .map(item => {\n    const rawId = String(item.wlobscd);\n    const rawTime = String(item.ymdhm || \"\");\n    \n    // Format Waktu ke ISO\n    let formattedTime = new Date().toISOString();\n    if (rawTime && rawTime.length === 12) {\n      formattedTime = `${rawTime.substring(0,4)}-${rawTime.substring(4,6)}-${rawTime.substring(6,8)}T${rawTime.substring(8,10)}:${rawTime.substring(10,12)}:00Z`;\n    }\n\n    const currentWl = parseFloat(item.wl || 0);\n    const config = wlMaster[rawId];\n    \n    let warningLevel = 0;\n    if (currentWl >= config.step3) warningLevel = 3;\n    else if (currentWl >= config.step2) warningLevel = 2;\n    else if (currentWl >= config.step1) warningLevel = 1;\n\n    return {\n      json: {\n        sensor_id: rawId,\n        sensor_type: \"water_level\",\n        pos_name: config.name,\n        value: currentWl,\n        warning_level: warningLevel,\n        measured_at: formattedTime,\n      }\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        800
+      ],
+      "id": "ef2d048b-4f09-4f4b-8099-c36ddd0d9623",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        -272
+      ],
+      "id": "475d9468-b4ac-4f06-95a1-d0484bf699fe",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger1').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -32
+      ],
+      "id": "c4df9252-a23a-45ac-9893-047b89aaa807",
+      "name": "Create a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger2').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        192
+      ],
+      "id": "259d8db7-ee0f-4105-b761-925c031e23e9",
+      "name": "Create a row2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger3').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        384
+      ],
+      "id": "33a427f0-a874-4df8-9edc-7154ebfaea55",
+      "name": "Create a row3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger4').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        592
+      ],
+      "id": "412335e9-8181-4679-b51e-9498a6c9a1b2",
+      "name": "Create a row4",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "obs_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "warning_level",
+              "fieldValue": "={{ $json.warning_level }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at.replace(/(\\.\\d{3})?Z$/i, '+07:00') }}"
+            },
+            {
+              "fieldId": "retrieve_at",
+              "fieldValue": "={{ $('Schedule Trigger5').item.json.timestamp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        800
+      ],
+      "id": "dc918d62-0d55-4919-af77-8f50431473b6",
+      "name": "Create a row5",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Jaga Balai ARR\n",
+        "height": 224,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "28463013-e2e8-4e53-96e4-da5fadf26a77",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## HKABBWS AWLR\n",
+        "height": 224,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        -96
+      ],
+      "typeVersion": 1,
+      "id": "6b9ea421-ec45-48a8-8ec6-25e5673157d6",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## HKABBWS ARR\n",
+        "height": 224,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "b2121ffe-21bd-4080-bf67-946eba3a743d",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## BPBD AWLR",
+        "height": 192,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        352
+      ],
+      "typeVersion": 1,
+      "id": "8f0473a3-0823-44f6-8426-de09c02ff67e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## FFWS KOICA ARR",
+        "height": 192,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        544
+      ],
+      "typeVersion": 1,
+      "id": "7b4a409c-c9ff-4f4d-96a5-3436ac900861",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## FFWS KOICA AWLR",
+        "height": 224,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        736
+      ],
+      "typeVersion": 1,
+      "id": "cadbfa08-60cc-4bfd-bff7-8342230f9243",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Create a row2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Create a row3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Create a row4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Create a row5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "058fe3c5-9084-452f-97f0-0b79114f76cc",
+  "meta": {
+    "instanceId": "e3d620622b0ba9cd83a040e578ac88276a5d2a47669823a212bb044aa6edb926"
+  },
+  "id": "7IDqOLFLxViOH9qd",
+  "tags": []
+}

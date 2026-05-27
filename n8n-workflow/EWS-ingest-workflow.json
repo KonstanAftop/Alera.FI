@@ -1,0 +1,412 @@
+{
+  "name": "EWS-ingest-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b9d6918b-2d01-41a7-ba18-1fb7e0e2ff27",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1072,
+        -240
+      ],
+      "id": "1a5a1cca-bd8c-4d4d-84ca-c70c90455ee7",
+      "name": "Webhook",
+      "webhookId": "b9d6918b-2d01-41a7-ba18-1fb7e0e2ff27"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body ?? raw;\n\nconst sensor_id = body.sensor_id;\nconst old_level = Number(body.old_level);\nconst new_level = Number(body.new_level);\nconst value = body.value != null ? Number(body.value) : null;\nconst trend_3h = body.trend_3h ?? 'stabil';\nconst measured_at = body.measured_at ?? new Date().toISOString();\n\nif (!sensor_id || Number.isNaN(old_level) || Number.isNaN(new_level)) {\n  throw new Error('Invalid webhook payload: missing sensor_id or levels');\n}\n\nreturn [{\n  json: {\n    sensor_id,\n    old_level,\n    new_level,\n    value,\n    trend_3h,\n    measured_at,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -256
+      ],
+      "id": "c8ef13c0-bde8-4b2b-8a02-dadb0c421f8c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "v_ews_eligible_subscribers",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sensor_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Code in JavaScript').item.json.sensor_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -240
+      ],
+      "id": "a555d4e2-3f5b-4905-b63d-dddd950251ec",
+      "name": "Get many rows1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "20511ebd-1f80-4f0c-867f-6cbdc140e9be",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        -240
+      ],
+      "id": "d4eecb64-816d-4827-b537-426c211092a1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $('Code in JavaScript').first().json;  // node normalisasi Anda\nconst subscribers = $input.all().map(i => i.json);\n\nreturn subscribers.map(sub => ({\n  json: {\n    user_id: sub.user_id,\n    sensor_id: event.sensor_id,\n    old_level: event.old_level,\n    new_level: event.new_level,\n    value: event.value,\n    trend_3h: event.trend_3h,\n    measured_at: event.measured_at,\n    status: 'pending',\n    recipient_type : 'personal'\n  },\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -288
+      ],
+      "id": "32c507b8-6149-42c8-a0a8-bc376d49bfa1",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "tableId": "ews_alert_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.user_id }}"
+            },
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "old_level",
+              "fieldValue": "={{ $json.old_level }}"
+            },
+            {
+              "fieldId": "new_level",
+              "fieldValue": "={{ $json.new_level }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "trend_3h",
+              "fieldValue": "={{ $json.trend_3h }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "recipient_type",
+              "fieldValue": "={{ $json.recipient_type }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -304
+      ],
+      "id": "c8a08286-9275-436a-ba6b-6c46125c70c1",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "v_ews_eligible_communities",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sensor_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.sensor_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        -16
+      ],
+      "id": "139d474b-5b9f-4d61-942b-d113cd3f7897",
+      "name": "Get many rows2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5984cc1e-1d88-4111-af10-8d8e7f02e9bc",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -336,
+        -16
+      ],
+      "id": "a3824c6b-1a5a-4bac-8334-e3bd34368c43",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $('Code in JavaScript').first().json;\nconst communities = $input.all().map(i => i.json);\n\nreturn communities.map(community => ({\n  json: {\n    user_id: community.user_id,\n    sensor_id: event.sensor_id,\n    old_level: event.old_level,\n    new_level: event.new_level,\n    value: event.value,\n    trend_3h: event.trend_3h,\n    measured_at: event.measured_at,\n    status: 'pending',\n    recipient_type: 'community',\n  },\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -64
+      ],
+      "id": "52cd0d90-5fb2-4908-93c1-9fea04c563b1",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "tableId": "ews_alert_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.user_id }}"
+            },
+            {
+              "fieldId": "sensor_id",
+              "fieldValue": "={{ $json.sensor_id }}"
+            },
+            {
+              "fieldId": "old_level",
+              "fieldValue": "={{ $json.old_level }}"
+            },
+            {
+              "fieldId": "new_level",
+              "fieldValue": "={{ $json.new_level }}"
+            },
+            {
+              "fieldId": "value",
+              "fieldValue": "={{ $json.value }}"
+            },
+            {
+              "fieldId": "trend_3h",
+              "fieldValue": "={{ $json.trend_3h }}"
+            },
+            {
+              "fieldId": "measured_at",
+              "fieldValue": "={{ $json.measured_at }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.status }}"
+            },
+            {
+              "fieldId": "recipient_type",
+              "fieldValue": "={{ $json.recipient_type }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "a87b06d5-f3ca-4ddc-98db-106e3b08e3b7",
+      "name": "Create a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jzGN83dXagLX9Md9",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get many rows2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b1211de7-12f3-4e3c-b8b1-59493d94a086",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e3d620622b0ba9cd83a040e578ac88276a5d2a47669823a212bb044aa6edb926"
+  },
+  "id": "fEWniH0Kt9YmwD5W",
+  "tags": []
+}
