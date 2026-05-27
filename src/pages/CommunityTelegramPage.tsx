@@ -386,7 +386,7 @@ const CommunityTelegramPage = () => {
                       </Button>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      Kirim ke bot sebelum membuat kode baru.
+                      Kirim ke grup komunitas sebelum membuat kode baru.
                     </p>
                   </div>
                 )}

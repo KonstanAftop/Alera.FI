@@ -344,14 +344,6 @@ const Index = () => {
                   <StatBox color="#ef4444" label="Siaga 1" value={counts.siaga1} />
                 </div>
 
-                <div className="rounded-lg bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900 border border-amber-200">
-                  <p className="mb-2 flex items-center gap-2 font-medium text-amber-900">
-                    <TriangleAlert className="h-3.5 w-3.5 text-amber-600" /> Waspada
-                  </p>
-                  {userRole === "personal" 
-                    ? "Dashboard hanya menampilkan pos yang saat ini terpasang pada akun Anda, beserta marker lokasi rumah tersimpan."
-                    : "Gunakan peta 3D untuk memantau pergerakan air secara real-time. Klik pada marker untuk berlangganan notifikasi Telegram."}
-                </div>
               </TabsContent>
 
               <TabsContent value="monitoring" className="m-0 space-y-4 p-4 animate-in fade-in duration-300">
