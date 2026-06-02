@@ -375,7 +375,7 @@ const Index = () => {
       {/* Main Panel Sidebar */}
       {panelVisible ? (
         <aside
-          className="pointer-events-auto absolute right-4 top-4 z-10 flex w-[300px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border text-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-right-4"
+          className="pointer-events-auto absolute right-2 sm:right-4 top-4 z-10 flex w-full max-w-[320px] sm:w-[300px] flex-col overflow-hidden rounded-2xl border border-border text-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-right-4"
           style={{ background: "var(--gradient-panel)", maxHeight: "calc(100vh - 10rem)" }}
         >
           <div className="flex items-center gap-3 border-b border-border px-4 py-3">
@@ -392,9 +392,10 @@ const Index = () => {
             </div>
             <button
               onClick={() => setPanelVisible(false)}
-              className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="ml-auto rounded-md p-1.5 sm:p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Tutup panel"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5 sm:h-4 sm:w-4" />
             </button>
           </div>
 
@@ -515,16 +516,16 @@ const Index = () => {
         ) : (
           <button
             onClick={() => setPanelVisible(true)}
-            className="pointer-events-auto absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl hover:bg-muted/50 animate-in fade-in zoom-in"
+            className="pointer-events-auto absolute right-2 sm:right-4 top-4 z-10 flex h-12 w-12 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-border text-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl hover:bg-muted/50 animate-in fade-in zoom-in"
             style={{ background: "var(--gradient-panel)" }}
             title="Buka Panel Dashboard"
           >
-            <List className="h-4 w-4" />
+            <List className="h-5 w-5 sm:h-4 sm:w-4" />
           </button>
         )}
 
       {/* Custom controls - Moved to bottom-left to avoid panel collision */}
-      <div className="pointer-events-auto absolute bottom-24 left-4 flex flex-col gap-3">
+      <div className="pointer-events-auto absolute bottom-20 sm:bottom-24 left-2 sm:left-4 flex flex-col gap-2 sm:gap-3">
         <ControlStack>
           <CtrlBtn onClick={() => zoomBy(1)}><Plus className="h-5 w-5" /></CtrlBtn>
           <CtrlBtn onClick={() => zoomBy(-1)}><Minus className="h-5 w-5" /></CtrlBtn>

@@ -142,3 +142,21 @@ All colors MUST be HSL.
 .maplibregl-popup {
   z-index: 15;
 }
+
+/* Mobile menu animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .mobile-menu-enter {
+    animation: slideDown 0.2s ease-out;
+  }
+}
