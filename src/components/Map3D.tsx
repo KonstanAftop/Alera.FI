@@ -465,18 +465,8 @@ const Map3D = ({
       attributionControl: { compact: true },
     });
 
-    // map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
     map.addControl(new maplibregl.FullscreenControl(), "top-left");
-    if ("geolocation" in navigator) {
-      map.addControl(
-        new maplibregl.GeolocateControl({
-          positionOptions: { enableHighAccuracy: true },
-          trackUserLocation: true,
-        }),
-        "top-left",
-      );
-    }
     map.addControl(
       new maplibregl.TerrainControl({ source: "terrainSource", exaggeration: 1.6 }),
       "top-left",

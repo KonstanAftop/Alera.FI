@@ -116,21 +116,21 @@ const FloodReportPage = () => {
   };
 
   return (
-    <section className="container mx-auto max-w-7xl px-4 py-6">
+    <section className="container mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
       <header className="mb-4">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <Droplets className="h-6 w-6 text-primary" /> Laporkan Banjir
+        <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
+          <Droplets className="h-5 w-5 text-primary sm:h-6 sm:w-6" /> Laporkan Banjir
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground sm:text-sm">
           Dokumentasikan kejadian banjir di lapangan untuk monitoring tim. Klasifikasi kedalaman
           mengacu pada Nurul Yuhan (ITB, 2017).
         </p>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="space-y-4 rounded-xl border bg-card p-4">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <div className="space-y-3 rounded-xl border bg-card p-3 sm:space-y-4 sm:p-4">
           <div>
-            <Label className="mb-2 block text-sm font-medium">Lokasi Banjir *</Label>
+            <Label className="mb-2 block text-xs font-medium sm:text-sm">Lokasi Banjir *</Label>
             <LocationGeocodeSearch
               value={lokasi}
               onChange={setLokasi}
@@ -138,20 +138,20 @@ const FloodReportPage = () => {
             />
           </div>
           <div>
-            <Label className="mb-2 block text-sm font-medium">Tingkat Keparahan *</Label>
+            <Label className="mb-2 block text-xs font-medium sm:text-sm">Tingkat Keparahan *</Label>
             <RadioGroup value={severity} onValueChange={(v) => setSeverity(v as typeof severity)}>
               <div className="grid gap-2">
                 {FLOOD_SEVERITY_OPTIONS.map((opt) => (
                   <div
                     key={opt.value}
-                    className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50"
+                    className="flex items-center space-x-2 rounded-lg border p-2 hover:bg-muted/50 sm:space-x-3 sm:p-3"
                   >
                     <RadioGroupItem value={opt.value} id={opt.value} />
-                    <Label htmlFor={opt.value} className="flex flex-1 cursor-pointer items-center gap-3">
-                      <span className="text-lg">{opt.icon}</span>
+                    <Label htmlFor={opt.value} className="flex flex-1 cursor-pointer items-center gap-2 sm:gap-3">
+                      <span className="text-base sm:text-lg">{opt.icon}</span>
                       <div className="flex-1">
-                        <div className="font-medium">{opt.label}</div>
-                        <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                        <div className="text-sm font-medium sm:text-base">{opt.label}</div>
+                        <div className="text-[10px] text-muted-foreground sm:text-xs">{opt.desc}</div>
                       </div>
                     </Label>
                   </div>
@@ -160,33 +160,34 @@ const FloodReportPage = () => {
             </RadioGroup>
           </div>
           <div>
-            <Label className="mb-2 block text-sm font-medium">Catatan (opsional)</Label>
+            <Label className="mb-2 block text-xs font-medium sm:text-sm">Catatan (opsional)</Label>
             <Textarea
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
               rows={4}
               placeholder="Mis. Air mulai masuk rumah ±30cm, jalan utama tergenang…"
+              className="text-sm"
             />
           </div>
           <Button onClick={handleSubmit} disabled={submitting || !lokasi.trim()} className="w-full">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Droplets className="h-4 w-4" />}
-            Kirim Laporan
+            <span className="ml-2">Kirim Laporan</span>
           </Button>
         </div>
 
         <div className="flex flex-col rounded-xl border bg-card">
-          <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5 sm:px-4 sm:py-3">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">Riwayat Laporan</h2>
+              <Clock className="h-3.5 w-3.5 text-muted-foreground sm:h-4 sm:w-4" />
+              <h2 className="text-xs font-semibold sm:text-sm">Riwayat Laporan</h2>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground sm:gap-2 sm:text-xs">
               <span>{reports.length} laporan</span>
               {reports.length > PAGE_SIZE && (
                 <>
                   <span>·</span>
                   <span>
-                    Halaman {page}/{totalPages}
+                    Hal {page}/{totalPages}
                   </span>
                 </>
               )}
@@ -207,11 +208,11 @@ const FloodReportPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[140px]">Lokasi</TableHead>
-                      <TableHead className="w-[100px]">Tingkat</TableHead>
-                      <TableHead className="hidden min-w-[120px] sm:table-cell">Catatan</TableHead>
-                      <TableHead className="min-w-[130px]">Waktu</TableHead>
-                      <TableHead className="w-12" />
+                      <TableHead className="min-w-[120px] text-xs sm:min-w-[140px]">Lokasi</TableHead>
+                      <TableHead className="w-[80px] text-xs sm:w-[100px]">Tingkat</TableHead>
+                      <TableHead className="hidden min-w-[120px] text-xs sm:table-cell">Catatan</TableHead>
+                      <TableHead className="min-w-[100px] text-xs sm:min-w-[130px]">Waktu</TableHead>
+                      <TableHead className="w-10 sm:w-12" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -219,37 +220,38 @@ const FloodReportPage = () => {
                       const severityOpt = getFloodSeverityOption(r.severity);
                       return (
                         <TableRow key={r.id}>
-                          <TableCell className="max-w-[200px]">
-                            <span className="line-clamp-2 font-medium" title={r.location_text}>
+                          <TableCell className="max-w-[160px] py-2 sm:max-w-[200px] sm:py-4">
+                            <span className="line-clamp-2 text-xs font-medium sm:text-sm" title={r.location_text}>
                               {r.location_text}
                             </span>
                           </TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold">
+                          <TableCell className="py-2 sm:py-4">
+                            <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[9px] font-bold sm:gap-1 sm:px-2 sm:text-[10px]">
                               <span>{severityOpt?.icon}</span>
-                              <span>{severityOpt?.label.toUpperCase()}</span>
+                              <span className="hidden sm:inline">{severityOpt?.label.toUpperCase()}</span>
+                              <span className="sm:hidden">{severityOpt?.label.slice(0, 3).toUpperCase()}</span>
                             </span>
                           </TableCell>
-                          <TableCell className="hidden max-w-[180px] sm:table-cell">
-                            <span className="line-clamp-2 text-muted-foreground">
+                          <TableCell className="hidden max-w-[180px] py-2 sm:table-cell sm:py-4">
+                            <span className="line-clamp-2 text-xs text-muted-foreground sm:text-sm">
                               {r.description || "—"}
                             </span>
                           </TableCell>
-                          <TableCell>
-                            <div className="text-xs">
+                          <TableCell className="py-2 sm:py-4">
+                            <div className="text-[10px] sm:text-xs">
                               <div className="font-mono">{formatTime(r.reported_at)}</div>
                               <div className="text-muted-foreground">{timeAgo(r.reported_at)}</div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 sm:py-4">
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7"
+                              className="h-6 w-6 sm:h-7 sm:w-7"
                               onClick={() => handleDelete(r.id)}
                               aria-label="Hapus laporan"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -259,44 +261,82 @@ const FloodReportPage = () => {
                 </Table>
               </div>
 
-              <footer className="mt-auto flex flex-col items-center gap-3 border-t px-4 py-3">
-                <p className="text-xs text-muted-foreground">
+              <footer className="mt-auto flex flex-col items-center gap-2 border-t px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">
                   Menampilkan {rangeStart}–{rangeEnd} dari {reports.length} laporan
                 </p>
                 {reports.length > PAGE_SIZE && (
                   <Pagination>
-                    <PaginationContent>
+                    <PaginationContent className="gap-0.5 sm:gap-1">
                       <PaginationItem>
                         <PaginationPrevious
                           href="#"
-                          className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          className={`h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm ${
+                            page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
+                          }`}
                           onClick={(e) => {
                             e.preventDefault();
                             if (page > 1) setPage(page - 1);
                           }}
                         />
                       </PaginationItem>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <PaginationItem key={p}>
-                          <PaginationLink
-                            href="#"
-                            isActive={p === page}
-                            className="cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setPage(p);
-                            }}
-                          >
-                            {p}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
+                      {(() => {
+                        // Show fewer pages on mobile
+                        const maxVisible = window.innerWidth < 640 ? 3 : totalPages;
+                        const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+                        
+                        if (totalPages <= maxVisible) {
+                          return pages.map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href="#"
+                                isActive={p === page}
+                                className="h-8 w-8 cursor-pointer text-xs sm:h-9 sm:w-9 sm:text-sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPage(p);
+                                }}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ));
+                        }
+                        
+                        // Show current page and neighbors on mobile
+                        let start = Math.max(1, page - 1);
+                        let end = Math.min(totalPages, page + 1);
+                        
+                        if (page === 1) end = Math.min(3, totalPages);
+                        if (page === totalPages) start = Math.max(totalPages - 2, 1);
+                        
+                        const visiblePages = [];
+                        for (let i = start; i <= end; i++) {
+                          visiblePages.push(i);
+                        }
+                        
+                        return visiblePages.map((p) => (
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              href="#"
+                              isActive={p === page}
+                              className="h-8 w-8 cursor-pointer text-xs sm:h-9 sm:w-9 sm:text-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setPage(p);
+                              }}
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ));
+                      })()}
                       <PaginationItem>
                         <PaginationNext
                           href="#"
-                          className={
+                          className={`h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm ${
                             page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
-                          }
+                          }`}
                           onClick={(e) => {
                             e.preventDefault();
                             if (page < totalPages) setPage(page + 1);
