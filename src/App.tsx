@@ -38,7 +38,7 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  return authState === "auth" ? <>{children}</> : <Navigate to="/auth" replace />;
+  return authState === "auth" ? <>{children}</> : <Navigate to="/landing" replace />;
 };
 
 const App = () => (
