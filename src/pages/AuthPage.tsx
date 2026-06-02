@@ -458,6 +458,7 @@ const AuthPage = () => {
           <p className="text-[10px] text-muted-foreground/50 uppercase tracking-tighter">© 2026 Alera FI · Secure Auth Protected</p>
         </CardFooter>
       </Card>
+      </div>
     </div>
   );
 };
