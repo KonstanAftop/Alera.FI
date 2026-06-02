@@ -13,6 +13,7 @@ import AuthPage from "./pages/AuthPage.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import CommunityTelegramPage from "./pages/CommunityTelegramPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import LandingPage from "./pages/LandingPage.tsx";
 import { supabase } from "./lib/supabase";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
             <Route path="/" element={<Index />} />
