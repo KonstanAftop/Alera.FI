@@ -385,25 +385,26 @@ const TablePage = () => {
             </Button>
           );
         })}
-        <Input placeholder="Cari nama stasiun…" value={search} onChange={(e) => setSearch(e.target.value)} className="ml-auto h-9 w-64" />
+        <Input placeholder="Cari nama stasiun…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 sm:ml-auto h-9" />
       </div>
 
-      <div className="rounded-xl border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox checked={allFilteredSelected} onCheckedChange={toggleAll} aria-label="Pilih semua" />
-              </TableHead>
-              <TableHead>Nama Pos</TableHead>
-              <TableHead>Tipe</TableHead>
-              <TableHead className="text-right">Nilai</TableHead>
-              <TableHead>Tren</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Update</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="rounded-xl border bg-card relative overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox checked={allFilteredSelected} onCheckedChange={toggleAll} aria-label="Pilih semua" />
+                </TableHead>
+                <TableHead>Nama Pos</TableHead>
+                <TableHead className="hidden sm:table-cell">Tipe</TableHead>
+                <TableHead className="text-right">Nilai</TableHead>
+                <TableHead className="hidden sm:table-cell">Tren</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell text-right">Update</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
@@ -420,13 +421,13 @@ const TablePage = () => {
                     <div className="font-medium">{p.nama}</div>
                     <div className="text-[11px] capitalize text-muted-foreground">{p.kategori}</div>
                   </TableCell>
-                  <TableCell><span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{p.tipe}</span></TableCell>
+                  <TableCell className="hidden sm:table-cell"><span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{p.tipe}</span></TableCell>
                   <TableCell className="text-right font-mono font-semibold">{formatValue(p)}</TableCell>
-                  <TableCell><TrenCell tren={p.tren} /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><TrenCell tren={p.tren} /></TableCell>
                   <TableCell>
                     <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE[status]}`}>{status}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                  <TableCell className="hidden md:table-cell text-right font-mono text-xs text-muted-foreground">
                     {p.reading
                       ? p.reading.updatedAtRaw
                         ? formatDateTimeWIB(p.reading.updatedAtRaw)
@@ -434,15 +435,18 @@ const TablePage = () => {
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant={isActive ? "default" : "outline"} onClick={() => openSingle(p.id)} className="h-7 gap-1 px-2 text-xs">
-                      <History className="h-3.5 w-3.5" /> Kirim
+                    <Button size="sm" variant={isActive ? "default" : "outline"} onClick={() => openSingle(p.id)} className="h-9 min-h-[44px] sm:h-7 gap-1 px-2 text-xs">
+                      <History className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Kirim</span>
                     </Button>
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
+        {/* Gradient hint for horizontal scroll on mobile */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/80 to-transparent pointer-events-none sm:hidden" />
       </div>
 
       {/* Panel: laporan historis 1 stasiun */}
