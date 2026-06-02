@@ -535,7 +535,7 @@ const Index = () => {
           <CtrlBtn onClick={() => rotateBy(30)}><RotateCcw className="h-5 w-5 -scale-x-100" /></CtrlBtn>
         </ControlStack>
         <div
-          className="flex overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-panel)] backdrop-blur-xl"
+          className="flex flex-col overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-panel)] backdrop-blur-xl"
           style={{ background: "var(--gradient-panel)" }}
         >
           <button
@@ -574,21 +574,6 @@ const Index = () => {
         />
       )}
 
-      {/* Telemetry */}
-      <div
-        className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-border px-4 py-2 text-xs text-foreground shadow-[var(--shadow-panel)] backdrop-blur-xl"
-        style={{ background: "var(--gradient-panel)" }}
-      >
-        <span className="font-mono">Pitch {pitch.toFixed(0)}°</span>
-        <span className="mx-3 text-muted-foreground">·</span>
-        <span className="font-mono">Bearing {bearing.toFixed(0)}°</span>
-        {activePos && (
-          <>
-            <span className="mx-3 text-muted-foreground">·</span>
-            <span className="font-mono">{activePos.nama}</span>
-          </>
-        )}
-      </div>
     </section>
   );
 };

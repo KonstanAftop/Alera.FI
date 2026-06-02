@@ -43,7 +43,17 @@ const AppLayout = () => {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-20 w-full items-center gap-4 border-b border-border/40 bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <div 
+          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate("/")}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              navigate("/");
+            }
+          }}
+        >
           <div className="h-12 w-12 flex items-center justify-center">
             <img
               src="/alera-logo.png"
