@@ -194,10 +194,74 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground overflow-hidden relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <Card className="w-full max-w-2xl border-border bg-card/80 backdrop-blur-3xl text-card-foreground shadow-2xl relative z-10 overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground lg:grid lg:grid-cols-[1.05fr_1fr]">
+      {/* LEFT — Brand panel with image */}
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white">
+        <img
+          src={bgImage}
+          alt="Citarum Majalaya"
+          className="absolute inset-0 h-full w-full object-cover"
+          width={1920}
+          height={1080}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(221_55%_18%)]/85 via-[hsl(221_50%_22%)]/70 to-[hsl(221_45%_12%)]/90" />
+        {/* Decorative animated rings */}
+        <div className="pointer-events-none absolute -bottom-32 -right-32 h-[420px] w-[420px] rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-[320px] w-[320px] rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -bottom-16 -right-16 h-[220px] w-[220px] rounded-full border border-white/15 animate-pulse" />
+
+        <div className="relative z-10">
+          <Link to="/landing" className="inline-flex items-center gap-2 text-xs font-medium text-white/70 hover:text-white transition">
+            <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke beranda
+          </Link>
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-medium backdrop-blur">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            Sistem aktif memantau DAS Citarum
+          </div>
+          <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            Bergabunglah dengan jaring pengaman Majalaya.
+          </h2>
+          <p className="mt-4 text-sm text-white/70 md:text-base">
+            Akses peta 3D, data sensor real-time, dan jaringan peringatan dini PACU Majalaya — gratis untuk warga & komunitas.
+          </p>
+
+          <ul className="mt-8 space-y-3 text-sm">
+            {[
+              { icon: Radio, t: "Data sensor diperbarui tiap 10 menit" },
+              { icon: Droplets, t: "Pantau TMA & curah hujan per pos" },
+              { icon: ShieldCheck, t: "Peringatan dini ke Telegram" },
+            ].map((f, i) => (
+              <li key={i} className="flex items-center gap-3 text-white/85">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15 backdrop-blur">
+                  <f.icon className="h-4 w-4" />
+                </span>
+                {f.t}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative z-10 text-[10px] uppercase tracking-widest text-white/40">
+          © 2026 Alera FI · Community-Driven Flood EWS
+        </p>
+      </aside>
+
+      {/* RIGHT — Form panel */}
+      <div className="relative flex min-h-screen items-center justify-center p-4 lg:p-10">
+        {/* Mobile background */}
+        <div className="absolute inset-0 lg:hidden">
+          <img src={bgImage} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+        </div>
+        <div className="pointer-events-none absolute top-1/2 left-1/2 hidden h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px] lg:block" />
+
+        <Card className="relative z-10 w-full max-w-xl border-border bg-card/90 text-card-foreground shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-black flex items-center justify-center shadow-[var(--shadow-glow)]">
             <img
