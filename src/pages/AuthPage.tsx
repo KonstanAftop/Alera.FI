@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +13,22 @@ import { API_BASE_URL } from "@/lib/api";
 import bgImage from "@/assets/landing-bg.jpg";
 
 const AuthPage = () => {
-  const [tab, setTab] = useState<"login" | "register">("login");
-  const [role, setRole] = useState<"personal" | "community">("personal");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Read query parameters
+  const modeParam = searchParams.get("mode");
+  const roleParam = searchParams.get("role");
+  
+  // Set initial state based on query parameters
+  const [tab, setTab] = useState<"login" | "register">(
+    modeParam === "login" ? "login" : modeParam === "signup" ? "register" : "login"
+  );
+  const [role, setRole] = useState<"personal" | "community">(
+    roleParam === "citizen" ? "personal" : roleParam === "community" ? "community" : "personal"
+  );
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     nama: "",
@@ -33,6 +44,21 @@ const AuthPage = () => {
   const [instruments, setInstruments] = useState<any[]>([]);
   const [riskProfile, setRiskProfile] = useState<string>("");
   const [riverDistance, setRiverDistance] = useState<number>(0);
+
+  // Update state when query parameters change
+  useEffect(() => {
+    if (modeParam === "login") {
+      setTab("login");
+    } else if (modeParam === "signup") {
+      setTab("register");
+    }
+    
+    if (roleParam === "citizen") {
+      setRole("personal");
+    } else if (roleParam === "community") {
+      setRole("community");
+    }
+  }, [modeParam, roleParam]);
 
   // Fetch real instruments via Backend Proxy
   useEffect(() => {
@@ -199,7 +225,7 @@ const AuthPage = () => {
       <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white">
         <img
           src={bgImage}
-          alt="Citarum Majalaya"
+          alt="DAS Citarum"
           className="absolute inset-0 h-full w-full object-cover"
           width={1920}
           height={1080}
@@ -225,10 +251,10 @@ const AuthPage = () => {
             Sistem aktif memantau DAS Citarum
           </div>
           <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-            Bergabunglah dengan jaring pengaman Majalaya.
+            Bergabunglah dengan sistem peringatan dini DAS Citarum.
           </h2>
           <p className="mt-4 text-sm text-white/70 md:text-base">
-            Akses peta 3D, data sensor real-time, dan jaringan peringatan dini PACU Majalaya — gratis untuk warga & komunitas.
+            Akses peta 3D, data sensor telemetri, dan peringatan dini banjir DAS Citarum — gratis untuk warga & komunitas.
           </p>
 
           <ul className="mt-8 space-y-3 text-sm">
@@ -248,7 +274,7 @@ const AuthPage = () => {
         </div>
 
         <p className="relative z-10 text-[10px] uppercase tracking-widest text-white/40">
-          © 2026 Alera FI · Community-Driven Flood EWS
+          © 2026 AleraFI. Hydrometeorological Monitoring and Flood Early Warning.
         </p>
       </aside>
 
@@ -263,15 +289,15 @@ const AuthPage = () => {
 
         <Card className="relative z-10 w-full max-w-xl border-border bg-card/90 text-card-foreground shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-black flex items-center justify-center shadow-[var(--shadow-glow)]">
+          <div className="mx-auto mb-0 h-20 w-20 flex items-center justify-center">
             <img
               src="/alera-logo.png"
-              alt="Alera FI Logo"
-              className="h-11 w-11 rounded-full object-cover"
+              alt="AleraFI Logo"
+              className="h-20 w-20 object-contain"
             />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Alera FI</CardTitle>
-          <CardDescription className="text-muted-foreground">Flood Monitoring & Early Warning — Community-Driven</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight -mt-2">AleraFI</CardTitle>
+          <CardDescription className="text-muted-foreground">To be safe, alert and aware</CardDescription>
         </CardHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
@@ -335,7 +361,7 @@ const AuthPage = () => {
                           >
                             <Building2 className={`h-6 w-6 ${role === "community" ? "text-primary" : "text-muted-foreground"}`} />
                             <span className="font-semibold">Komunitas</span>
-                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi pengelola wilayah</span>
+                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi untuk koordinasi peringatan dini</span>
                           </button>
                         </div>
                       </div>
@@ -454,9 +480,6 @@ const AuthPage = () => {
           </TabsContent>
         </Tabs>
         
-        <CardFooter className="justify-center border-t border-border py-4 bg-muted/50">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-tighter">© 2026 Alera FI · Secure Auth Protected</p>
-        </CardFooter>
       </Card>
       </div>
     </div>

@@ -10,7 +10,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Alera FI Palette */
+    /* AleraFI Palette */
     /* Dusk Blue: #476094, Pale Sky: #BFCFDC, Platinum: #EDEDED */
     --background: 300 3% 93%;    /* Platinum - Light background */
     --foreground: 221 35% 43%;    /* Dusk Blue - Dark text */
@@ -43,7 +43,7 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Map UI - Alera FI Theme */
+    /* Map UI - AleraFI Theme */
     --panel: 300 3% 93%;           /* Platinum panel */
     --panel-foreground: 221 35% 43%;  /* Dusk Blue text */
     --panel-glass: 207 29% 81% / 0.85; /* Pale Sky transparency */

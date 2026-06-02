@@ -28,16 +28,16 @@ const AppLayout = () => {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-20 w-full items-center gap-4 border-b border-border/40 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-black flex items-center justify-center shadow-md">
+          <div className="h-12 w-12 flex items-center justify-center">
             <img
               src="/alera-logo.png"
-              alt="Alera FI Logo"
-              className="h-11 w-11 object-cover rounded-full"
+              alt="AleraFI Logo"
+              className="h-12 w-12 object-contain"
             />
           </div>
           <div className="leading-tight">
-            <div className="text-base font-bold tracking-tight">Alera FI</div>
-            <div className="text-xs text-muted-foreground font-medium">Flood Monitoring</div>
+            <div className="text-base font-bold tracking-tight">AleraFI</div>
+            <div className="text-xs text-muted-foreground font-medium">To be safe, alert and aware</div>
           </div>
         </div>
 
