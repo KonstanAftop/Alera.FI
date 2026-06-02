@@ -48,7 +48,7 @@ const formatRaw = (tipe: "ARR" | "AWLR", v: number) =>
 
 
 // --- Warning draft generator (multi-stasiun) ---
-const generateWarningDraft = (selected: PosWithTrend[], context: string, communityName: string = "Alera FI", managedArea: string = "") => {
+const generateWarningDraft = (selected: PosWithTrend[], context: string, communityName: string = "AleraFI", managedArea: string = "") => {
   const siaga1 = selected.filter((p) => p.reading?.status === "siaga1");
   const siaga2 = selected.filter((p) => p.reading?.status === "siaga2");
   const siaga3 = selected.filter((p) => p.reading?.status === "siaga3");
@@ -126,7 +126,7 @@ const getStatusEmoji = (level: number) => {
   return "🟢";
 };
 
-const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], context: string, communityName: string = "Alera FI") => {
+const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], context: string, communityName: string = "AleraFI") => {
   const lines: string[] = [];
   const trendPoints = pickHistoryDraftPoints(fullHistData);
   const trendLabel =
@@ -291,7 +291,7 @@ const TablePage = () => {
   const handleGenerate = async () => {
     if (selected.length === 0) return;
     setGenerating(true);
-    const communityName = user?.nama || "Alera FI";
+    const communityName = user?.nama || "AleraFI";
     const managedArea = user?.managedArea || "";
     setDraft(generateWarningDraft(selected, context, communityName, managedArea));
     setGenerating(false);
@@ -328,7 +328,7 @@ const TablePage = () => {
   const handleSingleGenerate = async () => {
     if (!singlePos) return;
     setSingleGenerating(true);
-    const communityName = user?.nama || "Alera FI";
+    const communityName = user?.nama || "AleraFI";
     setSingleDraft(generateSingleDraft(singlePos, singleHistData, singleContext, communityName));
     setSingleGenerating(false);
     toast.success(`Draft historis 3J ${singlePos.nama} dibuat`);

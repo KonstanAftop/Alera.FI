@@ -65,8 +65,8 @@ const ProfilePage = () => {
           const formatted = data.map((d) => ({
             id: d.sensor_id,
             nama: d.pos_name,
-            tipe: (d.sensor_type?.toLowerCase().startsWith('rain') || d.sensor_type === 'rf') ? 'ARR' : 'AWLR',
-            lngLat: [d.lon, d.lat],
+            tipe: ((d.sensor_type?.toLowerCase().startsWith('rain') || d.sensor_type === 'rf') ? 'ARR' : 'AWLR') as 'ARR' | 'AWLR',
+            lngLat: [d.lon, d.lat] as [number, number],
             elevation: d.elevation,
             kategori: d.elevation > 900 ? 'hulu' : d.elevation > 660 ? 'tengah' : 'hilir',
           }));

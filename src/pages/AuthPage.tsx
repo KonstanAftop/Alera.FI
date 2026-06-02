@@ -1,22 +1,34 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X } from "lucide-react";
+import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X, ArrowLeft, Droplets, Radio, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import RegisterMap from "@/components/RegisterMap";
 import { supabase } from "@/lib/supabase";
 import { API_BASE_URL } from "@/lib/api";
+import bgImage from "@/assets/landing-bg.jpg";
 
 const AuthPage = () => {
-  const [tab, setTab] = useState<"login" | "register">("login");
-  const [role, setRole] = useState<"personal" | "community">("personal");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Read query parameters
+  const modeParam = searchParams.get("mode");
+  const roleParam = searchParams.get("role");
+  
+  // Set initial state based on query parameters
+  const [tab, setTab] = useState<"login" | "register">(
+    modeParam === "login" ? "login" : modeParam === "signup" ? "register" : "login"
+  );
+  const [role, setRole] = useState<"personal" | "community">(
+    roleParam === "citizen" ? "personal" : roleParam === "community" ? "community" : "personal"
+  );
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     nama: "",
@@ -32,6 +44,21 @@ const AuthPage = () => {
   const [instruments, setInstruments] = useState<any[]>([]);
   const [riskProfile, setRiskProfile] = useState<string>("");
   const [riverDistance, setRiverDistance] = useState<number>(0);
+
+  // Update state when query parameters change
+  useEffect(() => {
+    if (modeParam === "login") {
+      setTab("login");
+    } else if (modeParam === "signup") {
+      setTab("register");
+    }
+    
+    if (roleParam === "citizen") {
+      setRole("personal");
+    } else if (roleParam === "community") {
+      setRole("community");
+    }
+  }, [modeParam, roleParam]);
 
   // Fetch real instruments via Backend Proxy
   useEffect(() => {
@@ -193,20 +220,84 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground overflow-hidden relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <Card className="w-full max-w-2xl border-border bg-card/80 backdrop-blur-3xl text-card-foreground shadow-2xl relative z-10 overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground lg:grid lg:grid-cols-[1.05fr_1fr]">
+      {/* LEFT — Brand panel with image */}
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white">
+        <img
+          src={bgImage}
+          alt="DAS Citarum"
+          className="absolute inset-0 h-full w-full object-cover"
+          width={1920}
+          height={1080}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(221_55%_18%)]/85 via-[hsl(221_50%_22%)]/70 to-[hsl(221_45%_12%)]/90" />
+        {/* Decorative animated rings */}
+        <div className="pointer-events-none absolute -bottom-32 -right-32 h-[420px] w-[420px] rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-[320px] w-[320px] rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -bottom-16 -right-16 h-[220px] w-[220px] rounded-full border border-white/15 animate-pulse" />
+
+        <div className="relative z-10">
+          <Link to="/landing" className="inline-flex items-center gap-2 text-xs font-medium text-white/70 hover:text-white transition">
+            <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke beranda
+          </Link>
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-medium backdrop-blur">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            Sistem aktif memantau DAS Citarum
+          </div>
+          <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            Bergabunglah dengan sistem peringatan dini DAS Citarum.
+          </h2>
+          <p className="mt-4 text-sm text-white/70 md:text-base">
+            Akses peta 3D, data sensor telemetri, dan peringatan dini banjir DAS Citarum — gratis untuk warga & komunitas.
+          </p>
+
+          <ul className="mt-8 space-y-3 text-sm">
+            {[
+              { icon: Radio, t: "Data sensor diperbarui tiap 10 menit" },
+              { icon: Droplets, t: "Pantau TMA & curah hujan per pos" },
+              { icon: ShieldCheck, t: "Peringatan dini ke Telegram" },
+            ].map((f, i) => (
+              <li key={i} className="flex items-center gap-3 text-white/85">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15 backdrop-blur">
+                  <f.icon className="h-4 w-4" />
+                </span>
+                {f.t}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative z-10 text-[10px] uppercase tracking-widest text-white/40">
+          © 2026 AleraFI. Hydrometeorological Monitoring and Flood Early Warning.
+        </p>
+      </aside>
+
+      {/* RIGHT — Form panel */}
+      <div className="relative flex min-h-screen items-center justify-center p-4 lg:p-10">
+        {/* Mobile background */}
+        <div className="absolute inset-0 lg:hidden">
+          <img src={bgImage} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+        </div>
+        <div className="pointer-events-none absolute top-1/2 left-1/2 hidden h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px] lg:block" />
+
+        <Card className="relative z-10 w-full max-w-xl border-border bg-card/90 text-card-foreground shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-black flex items-center justify-center shadow-[var(--shadow-glow)]">
+          <div className="mx-auto mb-0 h-20 w-20 flex items-center justify-center">
             <img
               src="/alera-logo.png"
-              alt="Alera FI Logo"
-              className="h-11 w-11 rounded-full object-cover"
+              alt="AleraFI Logo"
+              className="h-20 w-20 object-contain"
             />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">Alera FI</CardTitle>
-          <CardDescription className="text-muted-foreground">Flood Monitoring & Early Warning — Community-Driven</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight -mt-2">AleraFI</CardTitle>
+          <CardDescription className="text-muted-foreground">To be safe, alert and aware</CardDescription>
         </CardHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
@@ -270,7 +361,7 @@ const AuthPage = () => {
                           >
                             <Building2 className={`h-6 w-6 ${role === "community" ? "text-primary" : "text-muted-foreground"}`} />
                             <span className="font-semibold">Komunitas</span>
-                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi pengelola wilayah</span>
+                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi untuk koordinasi peringatan dini</span>
                           </button>
                         </div>
                       </div>
@@ -389,10 +480,8 @@ const AuthPage = () => {
           </TabsContent>
         </Tabs>
         
-        <CardFooter className="justify-center border-t border-border py-4 bg-muted/50">
-          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-tighter">© 2026 Alera FI · Secure Auth Protected</p>
-        </CardFooter>
       </Card>
+      </div>
     </div>
   );
 };

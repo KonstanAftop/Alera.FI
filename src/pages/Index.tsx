@@ -349,7 +349,7 @@ const Index = () => {
 
   return (
     <section className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
-      <h1 className="sr-only">Peta 3D Alera FI — Flood Monitoring & Early Warning Platform</h1>
+      <h1 className="sr-only">Peta 3D AleraFI — To be safe, alert and aware</h1>
 
       <Map3D
         onMapReady={handleMapReady}
@@ -379,16 +379,16 @@ const Index = () => {
           style={{ background: "var(--gradient-panel)", maxHeight: "calc(100vh - 10rem)" }}
         >
           <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-            <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center shadow-[var(--shadow-glow)]">
+            <div className="h-8 w-8 flex items-center justify-center">
               <img
                 src="/alera-logo.png"
-                alt="Alera FI Logo"
-                className="h-7 w-7 rounded-full object-cover"
+                alt="AleraFI Logo"
+                className="h-8 w-8 object-contain"
               />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold leading-tight">Alera FI</h2>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Flood Monitoring</p>
+              <h2 className="text-sm font-bold leading-tight">AleraFI</h2>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">To be safe, alert and aware</p>
             </div>
             <button
               onClick={() => setPanelVisible(false)}
