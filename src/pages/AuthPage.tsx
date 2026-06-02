@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X } from "lucide-react";
+import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X, ArrowLeft, Droplets, Radio, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import RegisterMap from "@/components/RegisterMap";
 import { supabase } from "@/lib/supabase";
 import { API_BASE_URL } from "@/lib/api";
+import bgImage from "@/assets/landing-bg.jpg";
 
 const AuthPage = () => {
   const [tab, setTab] = useState<"login" | "register">("login");
