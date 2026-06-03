@@ -1,7 +1,7 @@
 """Telegram message templates for community channels."""
 
-PLATFORM_NAME = "Alera FI"
-PLATFORM_NAME_UPPER = "ALERA FI"
+PLATFORM_NAME = "AleraFI"
+PLATFORM_NAME_UPPER = "ALERAFI"
 
 
 def display_community_name(row: dict) -> str:

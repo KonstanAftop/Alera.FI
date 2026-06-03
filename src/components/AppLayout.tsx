@@ -62,8 +62,8 @@ const AppLayout = () => {
             />
           </div>
           <div className="leading-tight hidden sm:block">
-            <div className="text-base font-bold tracking-tight">Alera FI</div>
-            <div className="text-xs text-muted-foreground font-medium">Flood Monitoring</div>
+            <div className="text-base font-bold tracking-tight">AleraFI</div>
+            <div className="text-xs text-muted-foreground font-medium">To be safe, alert and aware</div>
           </div>
         </div>
 
