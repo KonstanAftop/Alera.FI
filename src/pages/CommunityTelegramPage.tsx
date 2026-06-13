@@ -244,7 +244,7 @@ const CommunityTelegramPage = () => {
           <MessageCircle className="h-6 w-6 text-primary" /> Konfigurasi Telegram
         </h1>
         <p className="text-sm text-muted-foreground">
-          Hubungkan group Telegram komunitas Anda untuk menerima broadcast peringatan dini otomatis.
+          Hubungkan group Telegram komunitas Anda untuk menerima broadcast informasi peringatan banjir otomatis.
         </p>
       </header>
 

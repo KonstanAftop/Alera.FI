@@ -251,17 +251,17 @@ const AuthPage = () => {
             Sistem aktif memantau DAS Citarum
           </div>
           <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-            Bergabunglah dengan sistem peringatan dini DAS Citarum.
+            Bergabunglah dengan sistem informasi peringatan banjir DAS Citarum.
           </h2>
           <p className="mt-4 text-sm text-white/70 md:text-base">
-            Akses peta 3D, data sensor telemetri, dan peringatan dini banjir DAS Citarum — gratis untuk warga & komunitas.
+            Akses peta 3D, data sensor telemetri, dan informasi peringatan banjir DAS Citarum — gratis untuk warga & komunitas.
           </p>
 
           <ul className="mt-8 space-y-3 text-sm">
             {[
               { icon: Radio, t: "Data sensor diperbarui tiap 10 menit" },
               { icon: Droplets, t: "Pantau TMA & curah hujan per pos" },
-              { icon: ShieldCheck, t: "Peringatan dini ke Telegram" },
+              { icon: ShieldCheck, t: "Informasi Peringatan Banjir ke Telegram" },
             ].map((f, i) => (
               <li key={i} className="flex items-center gap-3 text-white/85">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15 backdrop-blur">
@@ -274,7 +274,7 @@ const AuthPage = () => {
         </div>
 
         <p className="relative z-10 text-[10px] uppercase tracking-widest text-white/40">
-          © 2026 AleraFI. Hydrometeorological Monitoring and Flood Early Warning.
+          © 2026 AleraFI. Hydrometeorology Monitoring and Flood Warning Information System.
         </p>
       </aside>
 
@@ -361,7 +361,7 @@ const AuthPage = () => {
                           >
                             <Building2 className={`h-6 w-6 ${role === "community" ? "text-primary" : "text-muted-foreground"}`} />
                             <span className="font-semibold">Komunitas</span>
-                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi untuk koordinasi peringatan dini</span>
+                            <span className="text-[10px] text-muted-foreground text-center">Organisasi atau Instansi untuk distribusi informasi peringatan banjir</span>
                           </button>
                         </div>
                       </div>

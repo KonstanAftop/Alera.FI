@@ -84,7 +84,7 @@ const TelegramConnectModal = ({ activationCode, telegramLinked, refreshUser, onD
             <Radio className="h-5 w-5 text-primary" /> Aktivasi Telegram
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Sambungkan akun Telegram untuk menerima peringatan dini banjir.
+            Sambungkan akun Telegram untuk menerima informasi peringatan banjir.
           </DialogDescription>
         </DialogHeader>
 
@@ -157,8 +157,8 @@ const TelegramConnectModal = ({ activationCode, telegramLinked, refreshUser, onD
           >
             <X className="mr-2 h-4 w-4" /> Nanti Saja
           </Button>
-          <Button 
-            onClick={handleVerify} 
+          <Button
+            onClick={handleVerify}
             disabled={isVerifying}
             className="flex-[2] bg-primary hover:bg-primary/90 font-bold"
           >
