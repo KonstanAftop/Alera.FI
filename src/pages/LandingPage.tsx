@@ -287,7 +287,7 @@ const LandingPage = () => {
           <div className="mb-14 max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-widest text-primary">Cara Kerja</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Dari sensor di sungai, ke ponsel di tangan warga.
+              Dari sensor di sungai, ke device di tangan warga.
             </h2>
           </div>
 
@@ -296,11 +296,11 @@ const LandingPage = () => {
               {
                 icon: Droplets,
                 title: "1. Sensor Mengukur",
-                desc: "Sensor yang tersebar di DAS Citarum membaca tinggi air dan curah hujan secara berkala.",
+                desc: "Sensor dari berbagai sumber seperti FFWS KOICA, Jaga Balai, HKA BBWS Citarum, dan BPBD Kabupaten Bandung yang tersebar di DAS Citarum membaca tinggi air dan curah hujan secara berkala.",
               },
               {
                 icon: Activity,
-                title: "2. Sistem mendeteksi",
+                title: "2. Sistem Mendeteksi",
                 desc: "Sistem mendeteksi perubahan kondisi: aman, waspada, atau bahaya berdasarkan ambang batas.",
               },
               {
