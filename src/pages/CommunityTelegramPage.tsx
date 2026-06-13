@@ -244,7 +244,7 @@ const CommunityTelegramPage = () => {
           <MessageCircle className="h-6 w-6 text-primary" /> Konfigurasi Telegram
         </h1>
         <p className="text-sm text-muted-foreground">
-          Hubungkan group Telegram komunitas Anda untuk menerima broadcast informasi peringatan banjir otomatis.
+          Hubungkan group Telegram komunitas Anda untuk menerima broadcast informasi kewaspadaan banjir otomatis.
         </p>
       </header>
 
@@ -293,7 +293,7 @@ const CommunityTelegramPage = () => {
                     <div className="flex items-center gap-3">
                       <Bell className="h-4 w-4 text-primary" />
                       <div>
-                        <p className="text-sm font-medium">Peringatan Otomatis</p>
+                        <p className="text-sm font-medium">Kewaspadaan Otomatis</p>
                         <p className="text-[11px] text-muted-foreground">
                           Kirim notifikasi saat level pos berubah
                         </p>
@@ -466,7 +466,7 @@ const CommunityTelegramPage = () => {
                 <div>
                   <p className="font-medium">Selesai!</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Setelah terverifikasi, group akan menerima broadcast peringatan otomatis saat ada perubahan status pos pantau.
+                    Setelah terverifikasi, group akan menerima broadcast kewaspadaan otomatis saat ada perubahan status pos pantau.
                   </p>
                 </div>
               </div>

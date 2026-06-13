@@ -56,7 +56,7 @@ const generateWarningDraft = (selected: PosWithTrend[], context: string, communi
   const tingkat = siaga1.length > 0 ? "SIAGA 1" : siaga2.length > 0 ? "SIAGA 2" : siaga3.length > 0 ? "SIAGA 3" : "INFORMASI";
   const lines: string[] = [];
   const areaStr = managedArea ? ` - Wilayah ${managedArea}` : "";
-  lines.push(`⚠️ PERINGATAN RESMI ${communityName.toUpperCase()}${areaStr}`);
+  lines.push(`⚠️ INFORMASI KEWASPADAAN RESMI ${communityName.toUpperCase()}${areaStr}`);
   lines.push("");
   lines.push(`Status: ${tingkat}`);
   lines.push(`Waktu: ${new Date().toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}`);
@@ -295,7 +295,7 @@ const TablePage = () => {
     const managedArea = user?.managedArea || "";
     setDraft(generateWarningDraft(selected, context, communityName, managedArea));
     setGenerating(false);
-    toast.success("Draft peringatan dibuat", { description: "Edit dulu sebelum kirim." });
+    toast.success("Draft kewaspadaan dibuat", { description: "Edit dulu sebelum kirim." });
   };
   const handleSend = async () => {
     if (!draft.trim()) return;
@@ -367,7 +367,7 @@ const TablePage = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tabel Pos Pemantauan</h1>
           <p className="text-sm text-muted-foreground">
-            Pilih banyak pos via checkbox untuk peringatan gabungan, atau klik <span className="font-medium">Kirim</span> di baris untuk laporan historis 1 stasiun.
+            Pilih banyak pos via checkbox untuk informasi kewaspadaan gabungan, atau klik <span className="font-medium">Kirim</span> di baris untuk laporan historis 1 stasiun.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -534,7 +534,7 @@ const TablePage = () => {
         <div className="mt-4 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
           <header className="mb-3 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-semibold">Peringatan Gabungan</h2>
+            <h2 className="text-base font-semibold">Informasi Kewaspadaan Gabungan</h2>
             <span className="ml-auto text-xs text-muted-foreground">{selected.length} pos terpilih</span>
           </header>
           <div className="grid gap-4 md:grid-cols-2">
@@ -550,7 +550,7 @@ const TablePage = () => {
               </div>
               <Button onClick={handleGenerate} disabled={generating} className="w-full">
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Buat Draft Peringatan
+                Buat Draft Kewaspadaan
               </Button>
             </div>
             <div className="space-y-3">

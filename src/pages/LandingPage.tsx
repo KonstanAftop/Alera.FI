@@ -28,7 +28,7 @@ const features: Feature[] = [
     title: "Pemantauan telemetri",
     desc: "Data tinggi air dan curah hujan dari sensor ARR/AWLR di DAS Citarum, diperbarui tiap 10 menit.",
     warga: "Lihat status pos langganan di peta: aman, waspada, atau bahaya",
-    operator: "Data tabel multi-pos, grafik tren, dan siapkan draf peringatan",
+    operator: "Data tabel multi-pos, grafik tren, dan siapkan draf kewaspadaan",
   },
   {
     icon: MapPin,
@@ -39,9 +39,9 @@ const features: Feature[] = [
   },
   {
     icon: Bell,
-    title: "Informasi Peringatan",
+    title: "Informasi Kewaspadaan",
     desc: "Notifikasi otomatis saat tingkat siaga pos berubah.",
-    warga: "Peringatan ke Telegram pribadi (DM), disesuaikan profil risiko & lokasi rumah",
+    warga: "Informasi kewaspadaan ke Telegram pribadi (DM), disesuaikan profil risiko & lokasi rumah",
     operator: "Auto-alert ke grup Telegram + kirim broadcast manual dari dashboard",
   },
   {
@@ -119,8 +119,8 @@ const LandingPage = () => {
             </p>
 
             <p className="mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
-              Platform pemantauan hidrometeorologi dan informasi peringatan banjir — memadukan data sensor
-              telemetri, peta interaktif, dan jaringan informasi peringatan banjir DAS Citarum untuk merespons lebih cepat
+              Platform pemantauan hidrometeorologi dan informasi kewaspadaan banjir — memadukan data sensor
+              telemetri, peta interaktif, dan jaringan informasi kewaspadaan banjir DAS Citarum untuk merespons lebih cepat
               dari air yang naik.
             </p>
 
@@ -157,10 +157,10 @@ const LandingPage = () => {
           <div className="mb-14 max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-widest text-primary">Untuk Siapa</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Dua cara pakai, satu sistem informasi peringatan.
+              Dua cara pakai, satu sistem informasi kewaspadaan.
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Warga mendapat peringatan personal. Operator mendapat dashboard lengkap untuk koordinasi.
+              Warga mendapat informasi kewaspadaan secara personal. Operator mendapat dashboard lengkap untuk koordinasi.
             </p>
           </div>
 
@@ -184,7 +184,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                  Terima peringatan via Telegram
+                  Terima informasi kewaspadaan via Telegram
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
@@ -325,10 +325,10 @@ const LandingPage = () => {
       <section id="community" className="relative overflow-hidden px-6 py-16 md:px-12 md:py-20">
         <div className="mx-auto max-w-5xl rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-10 text-center shadow-2xl shadow-primary/10 md:p-16">
           <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-            Jadi bagian dari sistem informasi peringatan banjir DAS Citarum.
+            Jadi bagian dari sistem informasi kewaspadaan banjir DAS Citarum.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Warga mendapat peringatan personal. Operator mendapat dashboard lengkap untuk koordinasi.
+            Warga mendapat informasi kewaspadaan secara personal. Operator mendapat dashboard lengkap untuk koordinasi.
             Pilih pos pantau Anda dan terima informasi yang relevan dengan lokasi Anda.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -348,7 +348,7 @@ const LandingPage = () => {
       </section>
 
       <footer className="border-t border-border px-6 py-8 text-center text-xs text-muted-foreground md:px-12">
-        © 2026 AleraFI. Hydrometeorology Monitoring and Flood Warning Information System.
+        © 2026 AleraFI. Hydrometeorology Monitoring and Flood Alertness Information System.
       </footer>
     </div>
   );
