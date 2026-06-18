@@ -22,13 +22,16 @@ interface FloodReportApiResponse {
   data: FloodReport;
 }
 
-export function useFloodReports(communityId?: string) {
+export function useFloodReports(communityId?: string, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? (communityId !== undefined);
   const [reports, setReports] = useState<FloodReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
+    if (!enabled) return;
     try {
+      setLoading(true);
       const endpoint = communityId
         ? `/api/flood-reports?community_id=${communityId}`
         : "/api/flood-reports";
@@ -48,15 +51,17 @@ export function useFloodReports(communityId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [communityId]);
+  }, [communityId, enabled]);
 
   useEffect(() => {
-    refetch();
-    const interval = setInterval(refetch, 30000);
-    return () => clearInterval(interval);
-  }, [refetch]);
+    if (enabled) {
+      refetch();
+      const interval = setInterval(refetch, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [refetch, enabled]);
 
-  return { reports, loading, error, refetch };
+  return { reports, loading: enabled ? loading : true, error, refetch };
 }
 
 export async function addFloodReport(report: Omit<FloodReport, "id" | "reported_at">) {
