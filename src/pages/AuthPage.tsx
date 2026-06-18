@@ -423,9 +423,9 @@ const AuthPage = () => {
                             <span className="text-xs font-bold text-blue-800">Tentukan lokasi rumah Anda</span>
                           </div>
                           <ul className="text-[10px] text-blue-700 space-y-0.5 ml-5 list-disc">
-                            <li>Tekan <strong>"Lokasi Saya"</strong> untuk deteksi otomatis</li>
-                            <li>Atau klik langsung pada peta / cari alamat</li>
-                            <li>Geser pin biru untuk menyesuaikan posisi</li>
+                            <li>Tekan tombol radar <strong>🎯 (Lokasi Saya)</strong> di pojok kanan atas peta untuk deteksi otomatis</li>
+                            <li>Atau klik langsung pada peta / cari alamat di kolom pencarian</li>
+                            <li>Geser pin biru untuk mencocokkan posisi rumah Anda</li>
                           </ul>
                         </div>
                         <div className="h-[300px] w-full">

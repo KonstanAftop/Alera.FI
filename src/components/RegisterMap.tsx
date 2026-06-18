@@ -271,8 +271,8 @@ const RegisterMap = ({
     <div className="w-full h-full relative group/map overflow-hidden">
       <div ref={containerRef} className="w-full h-full" />
       
-      {/* Search Bar Overlay - Fixed width to not block clicks */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 w-[260px]">
+      {/* Search Bar Overlay - Responsive width to not block clicks */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 w-[180px] sm:w-[260px]">
         <div className="relative group">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${isSearching ? 'text-blue-500 animate-pulse' : 'text-slate-400'}`} />
           <Input 
@@ -307,11 +307,11 @@ const RegisterMap = ({
       {/* Locate Me Button */}
       <button
         onClick={handleLocateMe}
-        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 h-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg hover:bg-white text-slate-700 transition-all hover:scale-[1.03] active:scale-95"
+        className="absolute top-4 right-4 z-20 flex items-center justify-center gap-1.5 w-10 sm:w-auto px-0 sm:px-3 h-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg hover:bg-white text-slate-700 transition-all hover:scale-[1.03] active:scale-95"
         title="Gunakan lokasi saya"
       >
-        <Target className="h-4 w-4 text-blue-600" />
-        <span className="text-xs font-medium text-slate-700">Lokasi Saya</span>
+        <Target className="h-4 w-4 text-blue-600 shrink-0" />
+        <span className="hidden sm:inline text-xs font-medium text-slate-700 whitespace-nowrap">Lokasi Saya</span>
       </button>
     </div>
   );
