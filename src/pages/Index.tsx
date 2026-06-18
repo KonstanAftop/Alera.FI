@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Minus, RotateCcw, Mountain, Compass, Droplets,
   TriangleAlert, CloudRain, Activity, Waves, ArrowUpRight, ArrowDownRight, Minus as MinusIcon,
-  X, Info, List, MapPin, CheckCircle2, Radio, Loader2,
+  X, Info, List, MapPin, CheckCircle2, Radio, Loader2, HelpCircle,
 } from "lucide-react";
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useAuth } from "@/hooks/useAuth";
@@ -427,17 +427,96 @@ const Index = () => {
                     </p>
                   </div>
                 )}
-                <div className="space-y-2 text-[11px]">
-                  <p className="font-semibold text-muted-foreground uppercase tracking-widest text-[9px]">Legenda Pos:</p>
-                  <LegendRow icon={<CloudRain className="h-3.5 w-3.5 text-muted-foreground" />} title="ARR" desc="Pos Curah Hujan" />
-                  <LegendRow icon={<Waves className="h-3.5 w-3.5 text-muted-foreground" />} title="AWLR" desc="Pos Tinggi Air" />
+
+                {/* Penjelasan Pos Pantau */}
+                <div className="rounded-lg bg-muted/60 border border-border px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <HelpCircle className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] font-bold text-foreground">Apa itu Pos Pantau?</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Stasiun sensor otomatis yang mengukur kondisi sungai secara berkala setiap 10 menit.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <StatBox color="#22c55e" label="Normal" value={counts.normal} />
-                  <StatBox color="#3b82f6" label="Siaga 3" value={counts.siaga3} />
-                  <StatBox color="#f59e0b" label="Siaga 2" value={counts.siaga2} />
-                  <StatBox color="#ef4444" label="Siaga 1" value={counts.siaga1} />
+                {/* Jenis Sensor */}
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-muted-foreground uppercase tracking-widest text-[9px]">Jenis Sensor</p>
+                  <LegendRow icon={<CloudRain className="h-3.5 w-3.5 text-muted-foreground" />} title="ARR" desc="Curah Hujan (mm/jam)" />
+                  <LegendRow icon={<Waves className="h-3.5 w-3.5 text-muted-foreground" />} title="AWLR" desc="Tinggi Muka Air (m)" />
+                </div>
+
+                {/* Kategori Lokasi */}
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-muted-foreground uppercase tracking-widest text-[9px]">Kategori Lokasi</p>
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                    <div className="rounded-md bg-muted/50 border border-border px-2 py-1.5 text-center">
+                      <div className="font-bold text-foreground">Hulu</div>
+                      <div className="text-muted-foreground">Atas sungai</div>
+                    </div>
+                    <div className="rounded-md bg-muted/50 border border-border px-2 py-1.5 text-center">
+                      <div className="font-bold text-foreground">Tengah</div>
+                      <div className="text-muted-foreground">Bagian tengah</div>
+                    </div>
+                    <div className="rounded-md bg-muted/50 border border-border px-2 py-1.5 text-center">
+                      <div className="font-bold text-foreground">Hilir</div>
+                      <div className="text-muted-foreground">Bawah/muara</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warna & Status */}
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-muted-foreground uppercase tracking-widest text-[9px]">Warna Status</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#22c55e55", background: "#22c55e15" }}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#22c55e" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#22c55e" }}>Normal — {counts.normal}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">Aman, tidak perlu tindakan</p>
+                    </div>
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#3b82f655", background: "#3b82f615" }}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#3b82f6" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#3b82f6" }}>Siaga 3 — {counts.siaga3}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">Waspada, pantau perkembangan</p>
+                    </div>
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#f59e0b55", background: "#f59e0b15" }}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#f59e0b" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#f59e0b" }}>Siaga 2 — {counts.siaga2}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">Bersiap, siapkan barang penting</p>
+                    </div>
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#ef444455", background: "#ef444415" }}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#ef4444" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>Siaga 1 — {counts.siaga1}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">Bahaya, siap evakuasi!</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tren */}
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-muted-foreground uppercase tracking-widest text-[9px]">Tren 3 Jam Terakhir</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <ArrowUpRight className="h-3 w-3 text-red-500" />
+                      <span><span className="font-bold text-foreground">Naik</span> <span className="text-muted-foreground">— Kondisi memburuk</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <MinusIcon className="h-3 w-3 text-muted-foreground" />
+                      <span><span className="font-bold text-foreground">Stabil</span> <span className="text-muted-foreground">— Kondisi tetap</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <ArrowDownRight className="h-3 w-3 text-green-500" />
+                      <span><span className="font-bold text-foreground">Turun</span> <span className="text-muted-foreground">— Kondisi membaik</span></span>
+                    </div>
+                  </div>
                 </div>
 
               </TabsContent>

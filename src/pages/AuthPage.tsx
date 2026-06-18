@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X, ArrowLeft, Droplets, Radio, ShieldCheck } from "lucide-react";
+import { Mountain, User, Building2, ChevronRight, ChevronLeft, Check, LogIn, X, ArrowLeft, Droplets, Radio, ShieldCheck, MapPin, Info, CloudRain, Waves, Star } from "lucide-react";
 import { toast } from "sonner";
 import RegisterMap from "@/components/RegisterMap";
 import { supabase } from "@/lib/supabase";
@@ -237,8 +237,8 @@ const AuthPage = () => {
         <div className="pointer-events-none absolute -bottom-16 -right-16 h-[220px] w-[220px] rounded-full border border-white/15 animate-pulse" />
 
         <div className="relative z-10">
-          <Link to="/landing" className="inline-flex items-center gap-2 text-xs font-medium text-white/70 hover:text-white transition">
-            <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke beranda
+          <Link to="/landing" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm transition hover:bg-white/20 hover:text-white">
+            <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda
           </Link>
         </div>
 
@@ -286,6 +286,11 @@ const AuthPage = () => {
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
         </div>
         <div className="pointer-events-none absolute top-1/2 left-1/2 hidden h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px] lg:block" />
+
+        {/* Mobile back button */}
+        <Link to="/landing" className="absolute top-4 left-4 z-20 lg:hidden inline-flex items-center gap-2 rounded-lg border border-border bg-card/80 px-3 py-2 text-sm font-medium text-foreground backdrop-blur-sm shadow-sm transition hover:bg-card">
+          <ArrowLeft className="h-4 w-4" /> Beranda
+        </Link>
 
         <Card className="relative z-10 w-full max-w-xl border-border bg-card/90 text-card-foreground shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
         <CardHeader className="text-center pb-2">
@@ -411,6 +416,18 @@ const AuthPage = () => {
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                       <div className="space-y-3">
                         <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">2. Lokasi Rumah</Label>
+                        {/* Instruction banner */}
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                            <span className="text-xs font-bold text-blue-800">Tentukan lokasi rumah Anda</span>
+                          </div>
+                          <ul className="text-[10px] text-blue-700 space-y-0.5 ml-5 list-disc">
+                            <li>Tekan <strong>"Lokasi Saya"</strong> untuk deteksi otomatis</li>
+                            <li>Atau klik langsung pada peta / cari alamat</li>
+                            <li>Geser pin biru untuk menyesuaikan posisi</li>
+                          </ul>
+                        </div>
                         <div className="h-[300px] w-full">
                           <RegisterMap 
                             onLocationChange={(ll, addr) => {
@@ -420,7 +437,6 @@ const AuthPage = () => {
                             instruments={instruments}
                           />
                         </div>
-                        <p className="text-[10px] text-muted-foreground italic">Geser pin biru tepat di lokasi rumah Anda untuk akurasi rekomendasi.</p>
                       </div>
 
                       <div className="flex gap-3">
@@ -438,6 +454,28 @@ const AuthPage = () => {
                         <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                           {role === "personal" ? "3. Pilih Pos Pantau" : "2. Pilih Pos Pantau"}
                         </Label>
+
+                        {/* Auto-recommend banner (personal only) */}
+                        {role === "personal" && recommendedPosIds.length > 0 && (
+                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Info className="h-3.5 w-3.5 text-emerald-600" />
+                              <span className="text-xs font-bold text-emerald-800">Pos dipilih otomatis</span>
+                            </div>
+                            <p className="text-[10px] text-emerald-700 leading-relaxed">
+                              Berdasarkan lokasi rumah Anda, sistem telah memilih pos terdekat dan pos di hulu sungai yang relevan. Anda bisa menambah atau mengurangi sesuai kebutuhan.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Mini legenda */}
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/50 border border-border px-3 py-2 text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1"><CloudRain className="h-3 w-3" /> Curah Hujan</span>
+                          <span className="flex items-center gap-1"><Waves className="h-3 w-3" /> Tinggi Air</span>
+                          <span className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-500" /> Rekomendasi</span>
+                          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-blue-600 border-2 border-white shadow-sm" /> Terpilih</span>
+                        </div>
+
                         <div className="h-[350px] w-full rounded-xl overflow-hidden border border-border shadow-inner bg-background">
                           <RegisterMap 
                             initialCenter={lngLat || undefined}

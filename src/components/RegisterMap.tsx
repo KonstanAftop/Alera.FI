@@ -304,13 +304,14 @@ const RegisterMap = ({
         )}
       </div>
 
-      {/* Locate Me Button - Moved to Top Right */}
+      {/* Locate Me Button */}
       <button
         onClick={handleLocateMe}
-        className="absolute top-4 right-4 z-20 flex items-center justify-center w-10 h-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg hover:bg-white text-slate-700 transition-all hover:scale-110 active:scale-95"
+        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 h-10 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg hover:bg-white text-slate-700 transition-all hover:scale-[1.03] active:scale-95"
         title="Gunakan lokasi saya"
       >
-        <Target className="h-5 w-5" />
+        <Target className="h-4 w-4 text-blue-600" />
+        <span className="text-xs font-medium text-slate-700">Lokasi Saya</span>
       </button>
     </div>
   );
