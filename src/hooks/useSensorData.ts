@@ -27,9 +27,9 @@ function deriveKategori(elevation: number | null): PosMonitoring["kategori"] {
 
 // Map integer level to status string
 function levelToStatus(level: number): PosReading["status"] {
-  if (level >= 3) return "siaga1";
-  if (level >= 2) return "siaga2";
-  if (level >= 1) return "siaga3";
+  if (level >= 3) return "awas";
+  if (level >= 2) return "siaga";
+  if (level >= 1) return "waspada";
   return "normal";
 }
 

@@ -23,13 +23,13 @@ import {
   parseWIBNaiveMs,
 } from "@/lib/wibDatetime";
 
-type StatusFilter = "all" | "siaga1" | "siaga2" | "siaga3" | "normal" | "offline";
+type StatusFilter = "all" | "awas" | "siaga" | "waspada" | "normal" | "offline";
 
 const STATUS_BADGE: Record<string, string> = {
   normal: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
-  siaga3: "bg-blue-500/15 text-blue-700 border-blue-500/30",
-  siaga2: "bg-amber-500/15 text-amber-700 border-amber-500/30",
-  siaga1: "bg-rose-500/15 text-rose-700 border-rose-500/30",
+  waspada: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30",
+  siaga: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+  awas: "bg-rose-500/15 text-rose-700 border-rose-500/30",
   offline: "bg-slate-500/15 text-slate-600 border-slate-500/30",
 };
 
@@ -51,11 +51,11 @@ const formatRaw = (tipe: "ARR" | "AWLR", v: number) =>
 
 // --- Warning draft generator (multi-stasiun) ---
 const generateWarningDraft = (selected: PosWithTrend[], context: string, communityName: string = "AleraFI", managedArea: string = "") => {
-  const siaga1 = selected.filter((p) => p.reading?.status === "siaga1");
-  const siaga2 = selected.filter((p) => p.reading?.status === "siaga2");
-  const siaga3 = selected.filter((p) => p.reading?.status === "siaga3");
+  const awas = selected.filter((p) => p.reading?.status === "awas");
+  const siaga = selected.filter((p) => p.reading?.status === "siaga");
+  const waspada = selected.filter((p) => p.reading?.status === "waspada");
   const naik = selected.filter((p) => p.tren === "naik");
-  const tingkat = siaga1.length > 0 ? "SIAGA 1" : siaga2.length > 0 ? "SIAGA 2" : siaga3.length > 0 ? "SIAGA 3" : "INFORMASI";
+  const tingkat = awas.length > 0 ? "AWAS" : siaga.length > 0 ? "SIAGA" : waspada.length > 0 ? "WASPADA" : "INFORMASI";
   const lines: string[] = [];
   const areaStr = managedArea ? ` - Wilayah ${managedArea}` : "";
   lines.push(`⚠️ INFORMASI KEWASPADAAN RESMI ${communityName.toUpperCase()}${areaStr}`);
@@ -71,10 +71,10 @@ const generateWarningDraft = (selected: PosWithTrend[], context: string, communi
     lines.push(`• ${p.nama} (${p.kategori}) — ${formatValue(p)} — ${statusText} — tren ${trenText}`);
   });
   lines.push("");
-  if (siaga1.length > 0) lines.push(`🚨 ${siaga1.length} pos berstatus SIAGA 1. Warga di bantaran sungai diminta SIAP EVAKUASI.`);
-  else if (siaga2.length > 0) lines.push(`⚠️ ${siaga2.length} pos berstatus SIAGA 2. Pantau perkembangan & siapkan barang penting.`);
-  else if (siaga3.length > 0) lines.push(`📘 ${siaga3.length} pos berstatus SIAGA 3. Waspadai perkembangan cuaca.`);
-  if (naik.length > 0 && siaga1.length === 0) lines.push(`📈 ${naik.length} pos menunjukkan tren NAIK — kewaspadaan ditingkatkan.`);
+  if (awas.length > 0) lines.push(`🚨 ${awas.length} pos berstatus AWAS. Warga di bantaran sungai diminta SIAP EVAKUASI.`);
+  else if (siaga.length > 0) lines.push(`⚠️ ${siaga.length} pos berstatus SIAGA. Pantau perkembangan & siapkan barang penting.`);
+  else if (waspada.length > 0) lines.push(`📘 ${waspada.length} pos berstatus WASPADA. Waspadai perkembangan cuaca.`);
+  if (naik.length > 0 && awas.length === 0) lines.push(`📈 ${naik.length} pos menunjukkan tren NAIK — kewaspadaan ditingkatkan.`);
   if (context.trim()) { lines.push(""); lines.push("Catatan lapangan:"); lines.push(context.trim()); }
   lines.push("");
   lines.push(`Tetap tenang & ikuti arahan petugas. — Tim ${communityName}`);
@@ -126,8 +126,8 @@ const pickHistoryDraftPoints = (data: HistoricalPoint[]): HistoricalPoint[] => {
 
 const getStatusEmoji = (level: number) => {
   if (level >= 3) return "🔴";
-  if (level >= 2) return "🟡";
-  if (level >= 1) return "🔵";
+  if (level >= 2) return "🟠";
+  if (level >= 1) return "🟡";
   return "🟢";
 };
 
@@ -267,7 +267,7 @@ const TablePage = () => {
   }, [posList, statusFilter, search]);
 
   const counts = useMemo(() => {
-    const c = { all: posList.length, siaga1: 0, siaga2: 0, siaga3: 0, normal: 0, offline: 0 };
+    const c = { all: posList.length, awas: 0, siaga: 0, waspada: 0, normal: 0, offline: 0 };
     posList.forEach((p) => {
       if (isSensorStale(p.reading?.updatedAt)) { c.offline++; return; }
       c[p.reading?.status ?? "normal"]++;
@@ -393,8 +393,8 @@ const TablePage = () => {
       </header>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {(["all", "siaga1", "siaga2", "siaga3", "normal", "offline"] as StatusFilter[]).map((s) => {
-          const label = s === "all" ? "Semua" : s === "offline" ? "Offline" : s === "normal" ? "Normal" : `Siaga ${s.replace("siaga", "")}`;
+        {(["all", "awas", "siaga", "waspada", "normal", "offline"] as StatusFilter[]).map((s) => {
+          const label = s === "all" ? "Semua" : s === "offline" ? "Offline" : s === "normal" ? "Normal" : s === "awas" ? "Awas" : s === "siaga" ? "Siaga" : "Waspada";
           return (
             <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize">
               {label} <span className="ml-1.5 opacity-60">{counts[s]}</span>

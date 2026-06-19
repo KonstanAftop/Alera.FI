@@ -18,9 +18,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const STATUS_HSL: Record<PosReading["status"], string> = {
   normal: "#22c55e",
-  siaga3: "#3b82f6",
-  siaga2: "#f59e0b",
-  siaga1: "#ef4444",
+  waspada: "#eab308",
+  siaga: "#f97316",
+  awas: "#ef4444",
 };
 
 const TrenIcon = ({ tren }: { tren: Tren }) => {
@@ -345,15 +345,15 @@ const Index = () => {
   const awlrList = useMemo(() => statusPosList.filter((p) => p.tipe === "AWLR"), [statusPosList]);
 
   const counts = useMemo(() => {
-    let normal = 0, siaga3 = 0, siaga2 = 0, siaga1 = 0, offline = 0;
+    let normal = 0, waspada = 0, siaga = 0, awas = 0, offline = 0;
     statusPosList.forEach((p) => {
       if (isSensorStale(p.reading?.updatedAt)) { offline++; return; }
-      if (p.reading?.status === "siaga1") siaga1++;
-      else if (p.reading?.status === "siaga2") siaga2++;
-      else if (p.reading?.status === "siaga3") siaga3++;
+      if (p.reading?.status === "awas") awas++;
+      else if (p.reading?.status === "siaga") siaga++;
+      else if (p.reading?.status === "waspada") waspada++;
       else normal++;
     });
-    return { normal, siaga3, siaga2, siaga1, offline };
+    return { normal, waspada, siaga, awas, offline };
   }, [statusPosList]);
 
   return (
@@ -485,24 +485,24 @@ const Index = () => {
                       </div>
                       <p className="text-[9px] text-muted-foreground">Aman, tidak perlu tindakan</p>
                     </div>
-                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#3b82f655", background: "#3b82f615" }}>
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#eab30855", background: "#eab30815" }}>
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="h-2 w-2 rounded-full" style={{ background: "#3b82f6" }} />
-                        <span className="text-[10px] font-bold" style={{ color: "#3b82f6" }}>Siaga 3 — {counts.siaga3}</span>
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#eab308" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#eab308" }}>Waspada — {counts.waspada}</span>
                       </div>
                       <p className="text-[9px] text-muted-foreground">Waspada, pantau perkembangan</p>
                     </div>
-                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#f59e0b55", background: "#f59e0b15" }}>
+                    <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#f9731655", background: "#f9731615" }}>
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="h-2 w-2 rounded-full" style={{ background: "#f59e0b" }} />
-                        <span className="text-[10px] font-bold" style={{ color: "#f59e0b" }}>Siaga 2 — {counts.siaga2}</span>
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#f97316" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#f97316" }}>Siaga — {counts.siaga}</span>
                       </div>
                       <p className="text-[9px] text-muted-foreground">Bersiap, siapkan barang penting</p>
                     </div>
                     <div className="rounded-lg border px-2.5 py-2" style={{ borderColor: "#ef444455", background: "#ef444415" }}>
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="h-2 w-2 rounded-full" style={{ background: "#ef4444" }} />
-                        <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>Siaga 1 — {counts.siaga1}</span>
+                        <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>Awas — {counts.awas}</span>
                       </div>
                       <p className="text-[9px] text-muted-foreground">Bahaya, siap evakuasi!</p>
                     </div>

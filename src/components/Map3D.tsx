@@ -13,8 +13,8 @@ export interface PosReading {
   // ARR: intesitas hujan (mm/jam)
   // AWLR: tinggi muka air saat ini (m)
   value: number;
-  // status: normal (0) | siaga3 (1) | siaga2 (2) | siaga1 (3)
-  status: "normal" | "siaga3" | "siaga2" | "siaga1";
+  // status: normal (0) | waspada (1) | siaga (2) | awas (3)
+  status: "normal" | "waspada" | "siaga" | "awas";
   updatedAt: number; // epoch ms
   /** Raw `last_updated_at` from API (WIB naive or legacy ISO). */
   updatedAtRaw?: string;
@@ -185,9 +185,9 @@ const MAJALAYA_CENTER: [number, number] = [107.7619, -7.0428];
 
 const STATUS_COLOR: Record<PosReading["status"], string> = {
   normal: "#22c55e",
-  siaga3: "#3b82f6",
-  siaga2: "#f59e0b",
-  siaga1: "#ef4444",
+  waspada: "#eab308",
+  siaga: "#f97316",
+  awas: "#ef4444",
 };
 
 const POS_POPUP_OPTIONS: maplibregl.PopupOptions = {
@@ -199,9 +199,9 @@ const POS_POPUP_OPTIONS: maplibregl.PopupOptions = {
 
 const STATUS_LABEL: Record<PosReading["status"], string> = {
   normal: "Normal",
-  siaga3: "Siaga 3",
-  siaga2: "Siaga 2",
-  siaga1: "Siaga 1",
+  waspada: "Waspada",
+  siaga: "Siaga",
+  awas: "Awas",
 };
 
 const KATEGORI_LABEL: Record<PosKategori, string> = {
