@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
 import { formatTimeWIB } from "@/lib/wibDatetime";
+import { isSensorStale } from "@/lib/sensorUtils";
 
 /** Served from `public/geo/` (see `scripts/extract_rivers.py` to regenerate). */
 const RIVERS_GEOJSON_URL = "/geo/rivers_bandung.geojson";
@@ -9,7 +10,7 @@ export type PosKategori = "hulu" | "tengah" | "hilir";
 export type PosTipe = "ARR" | "AWLR"; // ARR = curah hujan, AWLR = tinggi muka air
 
 export interface PosReading {
-  // ARR: curah hujan kumulatif 1 jam terakhir (mm)
+  // ARR: intesitas hujan (mm/jam)
   // AWLR: tinggi muka air saat ini (m)
   value: number;
   // status: normal (0) | siaga3 (1) | siaga2 (2) | siaga1 (3)
@@ -233,15 +234,17 @@ function formatPopupValue(pos: PosMonitoring): string {
 
 function buildPosPopupHtml(pos: PosMonitoring): string {
   const status = pos.reading?.status ?? "normal";
-  const accent = STATUS_COLOR[status];
+  const stale = isSensorStale(pos.reading?.updatedAt);
+  const accent = stale ? "#64748b" : STATUS_COLOR[status];
+  const statusLabel = stale ? "Offline" : STATUS_LABEL[status];
   const tren = pos.tren ?? "stabil";
-  const trenColor = tren === "naik" ? "#ef4444" : tren === "turun" ? "#16a34a" : "#64748b";
-  const trenLabel = tren === "naik" ? "Naik" : tren === "turun" ? "Turun" : "Stabil";
-  const trenArrow = tren === "naik" ? "↑" : tren === "turun" ? "↓" : "→";
+  const trenColor = stale ? "#94a3b8" : (tren === "naik" ? "#ef4444" : tren === "turun" ? "#16a34a" : "#64748b");
+  const trenLabel = stale ? "\u2014" : (tren === "naik" ? "Naik" : tren === "turun" ? "Turun" : "Stabil");
+  const trenArrow = stale ? "" : (tren === "naik" ? "↑" : tren === "turun" ? "↓" : "→");
   const tipeLabel = pos.tipe === "ARR" ? "Curah hujan" : "Tinggi air";
 
   let deltaHtml = "";
-  if (pos.reading && pos.prevValue != null && !Number.isNaN(pos.prevValue)) {
+  if (!stale && pos.reading && pos.prevValue != null && !Number.isNaN(pos.prevValue)) {
     const diff = pos.reading.value - pos.prevValue;
     if (Math.abs(diff) > 0.001) {
       const sign = diff > 0 ? "+" : "";
@@ -251,31 +254,39 @@ function buildPosPopupHtml(pos: PosMonitoring): string {
     }
   }
 
+  const warningBanner = stale
+    ? `<div style="margin-bottom:8px;padding:6px 8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:9px;color:#b91c1c;font-weight:600;display:flex;align-items:center;gap:4px">
+         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+         Sensor tidak terupdate &gt; 30 mnt
+       </div>`
+    : "";
+
   return `
     <div style="font-family:system-ui,-apple-system,sans-serif;width:200px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,0.14)">
       <div style="height:3px;background:${accent}"></div>
       <div style="padding:10px 11px 9px">
+        ${warningBanner}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:8px">
           <div style="min-width:0;flex:1">
             <div style="font-size:12px;font-weight:700;color:#0f172a;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(pos.nama)}">${escapeHtml(pos.nama)}</div>
             <div style="font-size:9px;color:#64748b;margin-top:2px">${tipeLabel} · ${KATEGORI_LABEL[pos.kategori]}</div>
           </div>
-          <span style="flex-shrink:0;font-size:8px;font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:4px;background:${accent}1a;color:${accent};white-space:nowrap">${STATUS_LABEL[status]}</span>
+          <span style="flex-shrink:0;font-size:8px;font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:4px;background:${accent}1a;color:${accent};white-space:nowrap">${statusLabel}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px 8px;background:#f8fafc;border-radius:7px">
           <div>
             <div style="font-size:8px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.03em">Nilai</div>
-            <div style="font-size:15px;font-weight:800;color:#0f172a;line-height:1.25;margin-top:2px">${formatPopupValue(pos)}</div>
+            <div style="font-size:15px;font-weight:800;color:${stale ? "#94a3b8" : "#0f172a"};line-height:1.25;margin-top:2px">${formatPopupValue(pos)}</div>
             ${deltaHtml}
           </div>
           <div>
             <div style="font-size:8px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.03em">Tren 3 jam</div>
             <div style="font-size:13px;font-weight:700;color:${trenColor};margin-top:2px;display:flex;align-items:center;gap:2px">
-              <span style="font-size:12px;line-height:1">${trenArrow}</span>${trenLabel}
+              ${trenArrow ? `<span style="font-size:12px;line-height:1">${trenArrow}</span>` : ""}${trenLabel}
             </div>
           </div>
         </div>
-        <div style="margin-top:7px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;gap:4px">
+        <div style="margin-top:7px;font-size:9px;color:${stale ? "#ef4444" : "#94a3b8"};font-weight:${stale ? "600" : "normal"};display:flex;justify-content:space-between;gap:4px">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(pos.id)}</span>
           <span style="flex-shrink:0;font-variant-numeric:tabular-nums">${formatPopupUpdatedAt(pos)} WIB</span>
         </div>
@@ -337,9 +348,10 @@ const Map3D = ({
     list.forEach((pos) => {
       seen.add(pos.id);
       const status = pos.reading?.status ?? "normal";
-      const statusColor = STATUS_COLOR[status];
+      const stale = isSensorStale(pos.reading?.updatedAt);
+      const statusColor = stale ? "#64748b" : STATUS_COLOR[status];
       const isRain = pos.tipe === "ARR";
-      const blink = status !== "normal";
+      const blink = !stale && status !== "normal";
       const popupHtml = buildPosPopupHtml(pos);
 
       const existing = markersRef.current.get(pos.id);
@@ -347,6 +359,7 @@ const Map3D = ({
         existing.el.style.background = statusColor;
         existing.el.style.color = statusColor;
         existing.el.style.boxShadow = `0 4px 12px rgba(0,0,0,0.3)`;
+        existing.el.style.opacity = stale ? "0.75" : "1";
         existing.el.dataset.status = status;
         existing.el.classList.toggle("pos-blink", blink);
         existing.el.onclick = () => onPosClickRef.current?.(pos);
@@ -375,6 +388,7 @@ const Map3D = ({
           cursor: pointer; transition: transform .15s ease;
           display:flex;align-items:center;justify-content:center;
           font-size:13px;line-height:1;
+          opacity: ${stale ? "0.75" : "1"};
         `;
       const rainIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`;
       const waterIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;

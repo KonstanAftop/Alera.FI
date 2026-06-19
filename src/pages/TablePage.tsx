@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useHistoricalSensorData } from "@/hooks/useHistoricalSensorData";
 import { useAuth } from "@/hooks/useAuth";
+import { isSensorStale } from "@/lib/sensorUtils";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,13 +23,14 @@ import {
   parseWIBNaiveMs,
 } from "@/lib/wibDatetime";
 
-type StatusFilter = "all" | "siaga1" | "siaga2" | "siaga3" | "normal";
+type StatusFilter = "all" | "siaga1" | "siaga2" | "siaga3" | "normal" | "offline";
 
 const STATUS_BADGE: Record<string, string> = {
   normal: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
   siaga3: "bg-blue-500/15 text-blue-700 border-blue-500/30",
   siaga2: "bg-amber-500/15 text-amber-700 border-amber-500/30",
   siaga1: "bg-rose-500/15 text-rose-700 border-rose-500/30",
+  offline: "bg-slate-500/15 text-slate-600 border-slate-500/30",
 };
 
 const TrenCell = ({ tren }: { tren: Tren }) => {
@@ -63,7 +65,10 @@ const generateWarningDraft = (selected: PosWithTrend[], context: string, communi
   lines.push("");
   lines.push("Pos terpantau:");
   selected.forEach((p) => {
-    lines.push(`• ${p.nama} (${p.kategori}) — ${formatValue(p)} — ${p.reading?.status?.toUpperCase()} — tren ${p.tren}`);
+    const stale = isSensorStale(p.reading?.updatedAt);
+    const statusText = stale ? "OFFLINE ⚠️" : (p.reading?.status?.toUpperCase() ?? "NORMAL");
+    const trenText = stale ? "tidak terpantau" : p.tren;
+    lines.push(`• ${p.nama} (${p.kategori}) — ${formatValue(p)} — ${statusText} — tren ${trenText}`);
   });
   lines.push("");
   if (siaga1.length > 0) lines.push(`🚨 ${siaga1.length} pos berstatus SIAGA 1. Warga di bantaran sungai diminta SIAP EVAKUASI.`);
@@ -170,6 +175,12 @@ const generateSingleDraft = (p: PosWithTrend, fullHistData: HistoricalPoint[], c
   lines.push(`Status Saat Ini : ${p.reading?.status?.toUpperCase() ?? "NORMAL"}`);
   lines.push(`Kecenderungan   : ${p.tren.toUpperCase()}`);
 
+  const stale = isSensorStale(p.reading?.updatedAt);
+  if (stale) {
+    lines.push("");
+    lines.push("\u26a0\ufe0f PERHATIAN: Sensor ini sedang tidak memperbarui data (offline). Data di atas adalah data terakhir sebelum sensor terputus.");
+  }
+
   if (context.trim()) {
     lines.push("");
     lines.push("Catatan Lapangan:");
@@ -247,15 +258,20 @@ const TablePage = () => {
 
   const filtered = useMemo(() => {
     return posList.filter((p) => {
-      if (statusFilter !== "all" && p.reading?.status !== statusFilter) return false;
+      const stale = isSensorStale(p.reading?.updatedAt);
+      if (statusFilter === "offline") return stale;
+      if (statusFilter !== "all" && (stale || p.reading?.status !== statusFilter)) return false;
       if (search.trim() && !p.nama.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [posList, statusFilter, search]);
 
   const counts = useMemo(() => {
-    const c = { all: posList.length, siaga1: 0, siaga2: 0, siaga3: 0, normal: 0 };
-    posList.forEach((p) => { c[p.reading?.status ?? "normal"]++; });
+    const c = { all: posList.length, siaga1: 0, siaga2: 0, siaga3: 0, normal: 0, offline: 0 };
+    posList.forEach((p) => {
+      if (isSensorStale(p.reading?.updatedAt)) { c.offline++; return; }
+      c[p.reading?.status ?? "normal"]++;
+    });
     return c;
   }, [posList]);
 
@@ -377,8 +393,8 @@ const TablePage = () => {
       </header>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {(["all", "siaga1", "siaga2", "siaga3", "normal"] as StatusFilter[]).map((s) => {
-          const label = s === "all" ? "Semua" : s === "normal" ? "Normal" : `Siaga ${s.replace("siaga", "")}`;
+        {(["all", "siaga1", "siaga2", "siaga3", "normal", "offline"] as StatusFilter[]).map((s) => {
+          const label = s === "all" ? "Semua" : s === "offline" ? "Offline" : s === "normal" ? "Normal" : `Siaga ${s.replace("siaga", "")}`;
           return (
             <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} onClick={() => setStatusFilter(s)} className="capitalize">
               {label} <span className="ml-1.5 opacity-60">{counts[s]}</span>
@@ -425,7 +441,16 @@ const TablePage = () => {
                   <TableCell className="text-right font-mono font-semibold">{formatValue(p)}</TableCell>
                   <TableCell className="hidden sm:table-cell"><TrenCell tren={p.tren} /></TableCell>
                   <TableCell>
-                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE[status]}`}>{status}</span>
+                    {(() => {
+                      const stale = isSensorStale(p.reading?.updatedAt);
+                      const badgeKey = stale ? "offline" : status;
+                      const badgeLabel = stale ? "offline" : status;
+                      return (
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE[badgeKey]}`}>
+                          {badgeLabel}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-right font-mono text-xs text-muted-foreground">
                     {p.reading

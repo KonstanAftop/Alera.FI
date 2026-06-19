@@ -11,6 +11,7 @@ import {
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useAuth } from "@/hooks/useAuth";
 import TelegramConnectModal from "@/components/TelegramConnectModal";
+import { isSensorStale } from "@/lib/sensorUtils";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -68,7 +69,8 @@ const PosGroup = ({
     <div className="grid gap-1">
       {items.map((p) => {
         const status = p.reading?.status ?? "normal";
-        const statusColor = STATUS_HSL[status];
+        const stale = isSensorStale(p.reading?.updatedAt);
+        const statusColor = stale ? "#64748b" : STATUS_HSL[status];
         const isSelected = active?.id === p.id;
         return (
           <button
@@ -86,16 +88,22 @@ const PosGroup = ({
                 <span className="truncate text-[11px] font-medium text-foreground">{p.nama}</span>
               </div>
               <div className="mt-0.5 flex items-center gap-2 text-[9px] text-muted-foreground">
-                <span className="inline-flex items-center gap-0.5">
-                  <TrenIcon tren={p.tren} />
-                  {p.tren}
-                </span>
-                <span>·</span>
-                <span className="capitalize">{p.kategori}</span>
+                {stale ? (
+                  <span className="font-semibold text-red-500">⚠ Offline</span>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-0.5">
+                      <TrenIcon tren={p.tren} />
+                      {p.tren}
+                    </span>
+                    <span>·</span>
+                    <span className="capitalize">{p.kategori}</span>
+                  </>
+                )}
               </div>
             </div>
             <div className="ml-2 text-right">
-              <div className="font-mono text-xs font-bold text-foreground">
+              <div className={`font-mono text-xs font-bold ${stale ? "text-muted-foreground/60" : "text-foreground"}`}>
                 {p.reading
                   ? p.tipe === "ARR"
                     ? p.reading.value.toFixed(1)
@@ -337,14 +345,15 @@ const Index = () => {
   const awlrList = useMemo(() => statusPosList.filter((p) => p.tipe === "AWLR"), [statusPosList]);
 
   const counts = useMemo(() => {
-    let normal = 0, siaga3 = 0, siaga2 = 0, siaga1 = 0;
+    let normal = 0, siaga3 = 0, siaga2 = 0, siaga1 = 0, offline = 0;
     statusPosList.forEach((p) => {
+      if (isSensorStale(p.reading?.updatedAt)) { offline++; return; }
       if (p.reading?.status === "siaga1") siaga1++;
       else if (p.reading?.status === "siaga2") siaga2++;
       else if (p.reading?.status === "siaga3") siaga3++;
       else normal++;
     });
-    return { normal, siaga3, siaga2, siaga1 };
+    return { normal, siaga3, siaga2, siaga1, offline };
   }, [statusPosList]);
 
   return (
@@ -496,6 +505,13 @@ const Index = () => {
                         <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>Siaga 1 — {counts.siaga1}</span>
                       </div>
                       <p className="text-[9px] text-muted-foreground">Bahaya, siap evakuasi!</p>
+                    </div>
+                    <div className="col-span-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "#64748b55", background: "#64748b15" }}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="h-2 w-2 rounded-full" style={{ background: "#64748b" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "#64748b" }}>Offline — {counts.offline}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">Sensor tidak mengirim data &gt; 30 menit. Perangkat atau jaringan mungkin bermasalah.</p>
                     </div>
                   </div>
                 </div>
