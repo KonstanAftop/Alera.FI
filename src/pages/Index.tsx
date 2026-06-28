@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Minus, RotateCcw, Mountain, Compass, Droplets,
   TriangleAlert, CloudRain, Activity, Waves, ArrowUpRight, ArrowDownRight, Minus as MinusIcon,
-  X, Info, List, MapPin, CheckCircle2, Radio, Loader2, HelpCircle,
+  X, Info, List, MapPin, CheckCircle2, Radio, Loader2, HelpCircle, ShieldCheck,
 } from "lucide-react";
 import { useSensorData, type PosWithTrend, type Tren } from "@/hooks/useSensorData";
 import { useAuth } from "@/hooks/useAuth";
@@ -533,6 +533,16 @@ const Index = () => {
                       <span><span className="font-bold text-foreground">Turun</span> <span className="text-muted-foreground">— Kondisi membaik</span></span>
                     </div>
                   </div>
+                </div>
+
+                {/* Sumber Data Resmi */}
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-2.5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Sumber Data Resmi
+                  </div>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed">
+                    Data merujuk secara resmi dari FFWS KOICA, HKA BBWS Citarum, Jaga Balai, BPBD Kab. Bandung, BMKG, dan inaRISK BNPB.
+                  </p>
                 </div>
 
               </TabsContent>

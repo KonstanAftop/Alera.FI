@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import bgImage from "@/assets/landing-bg.jpg";
+import DisclaimerModal, { DISCLAIMER_STORAGE_KEY } from "@/components/DisclaimerModal";
 
 type Feature = {
   icon: LucideIcon;
@@ -60,6 +62,15 @@ const stats = [
 ];
 
 const LandingPage = () => {
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    const isDismissed = localStorage.getItem(DISCLAIMER_STORAGE_KEY);
+    if (isDismissed !== "true") {
+      setShowDisclaimer(true);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero */}
@@ -87,15 +98,30 @@ const LandingPage = () => {
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">To be safe, alert and aware</p>
             </div>
           </Link>
-          <nav className="hidden gap-1 text-sm font-medium md:flex">
+          <nav className="hidden gap-1 text-sm font-medium md:flex items-center">
             <a href="#audience" className="px-4 py-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all">Untuk Siapa</a>
             <a href="#features" className="px-4 py-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all">Fitur</a>
             <a href="#how" className="px-4 py-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all">Cara Kerja</a>
             <a href="#community" className="px-4 py-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all">Daftar</a>
+            <button
+              onClick={() => setShowDisclaimer(true)}
+              className="px-4 py-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 font-semibold"
+            >
+              <ShieldCheck className="h-4 w-4" /> Disclaimer
+            </button>
           </nav>
-          <Link to="/auth?mode=login">
-            <Button className="shadow-lg shadow-primary/30">Masuk</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDisclaimer(true)}
+              className="md:hidden p-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+              title="Disclaimer"
+            >
+              <ShieldCheck className="h-5 w-5" />
+            </button>
+            <Link to="/auth?mode=login">
+              <Button className="shadow-lg shadow-primary/30">Masuk</Button>
+            </Link>
+          </div>
         </header>
 
         {/* Hero content */}
@@ -348,8 +374,9 @@ const LandingPage = () => {
       </section>
 
       <footer className="border-t border-border px-6 py-8 text-center text-xs text-muted-foreground md:px-12">
-        © 2026 AleraFI. Hydrometeorology Monitoring and Flood Alertness Information System.
+        © 2026 AleraFI. Platform Pemantauan Hidrometeorologi dan Informasi Kewaspadaan Banjir DAS Citarum.
       </footer>
+      <DisclaimerModal open={showDisclaimer} onOpenChange={setShowDisclaimer} />
     </div>
   );
 };

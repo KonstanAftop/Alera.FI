@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Map as MapIcon, Table as TableIcon, Droplets, User, LogOut, MessageCircle, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Map as MapIcon, Table as TableIcon, Droplets, User, LogOut, MessageCircle, Menu, X, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import DisclaimerModal, { DISCLAIMER_STORAGE_KEY } from "@/components/DisclaimerModal";
 
 // Skeleton component for loading state
 const NavItemSkeleton = () => (
@@ -16,6 +17,14 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const userRole = user?.role;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  useEffect(() => {
+    const isDismissed = localStorage.getItem(DISCLAIMER_STORAGE_KEY);
+    if (isDismissed !== "true") {
+      setShowDisclaimer(true);
+    }
+  }, []);
 
   const navItems = [
     { to: "/", label: "Peta 3D", icon: MapIcon, end: true, roles: ["personal", "community"] },
@@ -79,23 +88,33 @@ const AppLayout = () => {
             </>
           ) : (
             // Show actual menu items with fade-in
-            filteredNav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all animate-in fade-in duration-300 ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`
-                }
+            <>
+              {filteredNav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all animate-in fade-in duration-300 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`
+                  }
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </NavLink>
+              ))}
+              <button
+                onClick={() => setShowDisclaimer(true)}
+                className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all animate-in fade-in duration-300"
+                title="Lihat Disclaimer & Sumber Data Resmi"
               >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))
+                <ShieldCheck className="h-4 w-4 text-blue-500" />
+                Disclaimer
+              </button>
+            </>
           )}
         </nav>
 
@@ -151,24 +170,36 @@ const AppLayout = () => {
                 <div className="h-10 bg-muted/50 rounded-lg animate-pulse" />
               </>
             ) : (
-              filteredNav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  onClick={handleMobileNavClick}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all min-h-[44px] ${
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "text-foreground hover:bg-muted"
-                    }`
-                  }
+              <>
+                {filteredNav.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={handleMobileNavClick}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all min-h-[44px] ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-foreground hover:bg-muted"
+                      }`
+                    }
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+                <button
+                  onClick={() => {
+                    handleMobileNavClick();
+                    setShowDisclaimer(true);
+                  }}
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground hover:bg-muted transition-all min-h-[44px]"
                 >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </NavLink>
-              ))
+                  <ShieldCheck className="h-5 w-5 text-blue-500" />
+                  Disclaimer & Sumber Data
+                </button>
+              </>
             )}
             
             {/* Logout in Mobile Menu */}
@@ -189,6 +220,9 @@ const AppLayout = () => {
       <main className="flex-1">
         <Outlet />
       </main>
+
+      {/* Global Disclaimer Modal */}
+      <DisclaimerModal open={showDisclaimer} onOpenChange={setShowDisclaimer} />
     </div>
   );
 };
