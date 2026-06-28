@@ -50,7 +50,7 @@ const DisclaimerModal = ({ open, onOpenChange }: Props) => {
       <DialogContent className="sm:max-w-2xl border-border bg-card/95 backdrop-blur-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wider">
-            <ShieldCheck className="h-4 w-4 text-primary" /> Informasi Kewaspadaan & Sumber Data
+            <ShieldCheck className="h-4 w-4 text-primary" /> Disclaimer
           </div>
           <DialogTitle className="text-xl font-bold leading-tight text-foreground">
             Platform Pemantauan Hidrometeorologi dan Informasi Kewaspadaan Banjir DAS Citarum
