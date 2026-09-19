@@ -32,11 +32,38 @@ Alera FI is a comprehensive, multi-platform flood monitoring and early warning s
 
 ## Cara Menjalankan
 
-1. Pastikan Anda memiliki Node.js terinstal.
-2. Jalankan `npm install` untuk menginstal dependensi.
-3. Jalankan `npm run dev` untuk memulai server pengembangan.
-4. Buka `http://localhost:8080` di browser Anda (port default Vite; lihat output terminal jika berbeda).
+### Frontend saja
 
-Backend dan frontend bersamaan (opsional): dari root repo jalankan `bash scripts/start-dev.sh`.
+1. Pastikan Node.js dan npm sudah terinstal.
+2. Instal dependensi frontend:
 
-Untuk variabel lingkungan frontend, salin `.env.example` menjadi `.env` dan isi nilai Supabase Anda.
+   ```bash
+   npm install
+   ```
+
+3. Siapkan file `.env` dan isi variabel Supabase yang diperlukan.
+4. Jalankan server pengembangan:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Buka URL yang ditampilkan Vite di terminal, biasanya `http://localhost:8080`.
+
+### Backend dan frontend
+
+Backend membutuhkan Python virtual environment. Dari root repository, jalankan:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements.txt
+bash scripts/start-dev.sh
+```
+
+Script tersebut menjalankan backend FastAPI di `http://localhost:8005` dan frontend melalui Vite. Script juga akan menghentikan proses yang menggunakan port pengembangan umum (`8005`, `5173`, `8080`, dan `8081`) sebelum memulai layanan.
+
+Jika `.venv` sudah dibuat, cukup jalankan:
+
+```bash
+bash scripts/start-dev.sh
+```
