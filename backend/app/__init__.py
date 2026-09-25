@@ -1,1 +1,0 @@
-# Pamor Backend Application

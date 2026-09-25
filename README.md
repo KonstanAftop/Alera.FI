@@ -1,69 +1,45 @@
-# Alera FI - Flood Monitoring & Early Warning Platform
+# ALERA-FI — volunteer workflow prototype
 
-Alera FI is a comprehensive, multi-platform flood monitoring and early warning system. Built for hydrometeorological data integration, community-driven disaster preparedness, and alert dissemination across multiple channels.
+This branch implements the scope in `requirements.md` as an Indonesian, mobile-first demonstration. It is not an operational flood-warning service.
 
-## Key Features
+## Run
 
-- **Monitoring Dashboard**: Visualization of rainfall (ARR) and water level (AWLR) data with interactive 3D terrain mapping.
-- **Early Warning System**: Automated multi-tier alert levels (Normal, Siaga 3/2/1) with threshold-based detection.
-- **Community-Based Reporting**: Citizen-driven flood and disaster reporting for ground-truth data collection.
-- **Multi-Channel Alerts**: Integrated Telegram notifications and alert distribution to communities.
-- **Geospatial Intelligence**: Interactive maps with MapLibre GL, DEM visualization, and location-based recommendations.
-- **Role-Based Access**: Support for individual citizens and community organizations with tailored interfaces.
-- **Knowledge Center**: Disaster preparedness documentation and technical protocols.
-
-## Technology Stack
-
-- **Frontend**: React, TypeScript, Vite.
-- **Data Visualization**: MapLibre GL JS, Recharts, Shadcn UI.
-- **Styling**: Tailwind CSS, Lucide React icons.
-- **State Management**: Zustand & React Query.
-- **Backend**: FastAPI, Supabase, Data Integration.
-
-## Struktur repositori (ringkas)
-
-| Lokasi | Isi |
-|--------|-----|
-| `public/geo/` | Aset geospasial untuk web: `rivers_bandung.geojson`, `flood_risk.tiff` |
-| `scripts/` | Utilitas: `extract_rivers.py`, `test_spatial.py`, `start-dev.sh` |
-| `docs/` | Konteks (`CONTEXT.md`), deploy VPS (`DEPLOYMENT.md`), skema Supabase |
-| `data/` | Opsional: input mentah (mis. shapefile); lihat `data/README.md` |
-| `backend/` | API FastAPI (`main.py`) |
-
-## Cara Menjalankan
-
-### Frontend saja
-
-1. Pastikan Node.js dan npm sudah terinstal.
-2. Instal dependensi frontend:
-
-   ```bash
-   npm install
-   ```
-
-3. Siapkan file `.env` dan isi variabel Supabase yang diperlukan.
-4. Jalankan server pengembangan:
-
-   ```bash
-   npm run dev
-   ```
-
-5. Buka URL yang ditampilkan Vite di terminal, biasanya `http://localhost:8080`.
-
-### Backend dan frontend
-
-Backend membutuhkan Python virtual environment. Dari root repository, jalankan:
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r backend/requirements.txt
-bash scripts/start-dev.sh
+```sh
+npm install
+npm run dev
 ```
 
-Script tersebut menjalankan backend FastAPI di `http://localhost:8005` dan frontend melalui Vite. Script juga akan menghentikan proses yang menggunakan port pengembangan umum (`8005`, `5173`, `8080`, dan `8081`) sebelum memulai layanan.
+Open http://localhost:8080. No backend, environment variables, or API credentials are required. Choose the volunteer or Jaga Balai Majalaya admin demo account. Create a demo volunteer to show village selection and monitoring onboarding.
 
-Jika `.venv` sudah dibuat, cukup jalankan:
-
-```bash
-bash scripts/start-dev.sh
+```sh
+npm run build
+npm run lint
+npm test
+npx tsc --noEmit -p tsconfig.app.json
 ```
+
+## Demonstration
+
+1. Enter a demo account → Monitoring (default Pos Saya).
+2. Switch to Semua Pos; inspect AWLR / ARR / CCTV markers or their accessible cards.
+3. Inspect historical data, separate +2 / +3 / +4 hour forecasts, and contextual explanation.
+4. Select several posts → review → generate a simulated AI draft → edit → ready to share.
+5. Open WhatsApp manually. Return and choose Belum or explicitly confirm sent.
+6. Inspect Activity. Incomplete messages can be resumed there after a reload.
+7. Change Account monitoring preferences; other posts remain accessible.
+8. Enter Admin to manage volunteers, villages, sources, thresholds, knowledge and demo configuration.
+
+## Scope and limitations
+
+- Monitoring observations and forecasts are deterministic simulated fixtures, timestamped when the demo is first opened. ARR totals integrate timestamped 15-minute measurements; they are not extrapolated from one reading.
+- Demo login is a local account selector, not secure authentication. Local storage is per-browser and stores demo accounts, preferences, messages, snapshots and activity. Do not enter sensitive information.
+- AI drafting/context explanations are local deterministic simulations. Assistant responses search enabled Admin knowledge and identify their source; no language model is connected.
+- CCTV and satellite are explicitly unavailable, rather than fabricated live feeds.
+- WhatsApp handoff is user initiated. Confirmation records only the volunteer's statement; it does not verify delivery.
+- The map uses OpenStreetMap tiles and needs internet access. The list of posts remains usable if tiles fail. Google Fonts is optional; system fonts are the fallback.
+- Source statuses and thresholds are configurable demo metadata. Production data freshness, classifications, forecasting and ingestion still require the engineering decisions listed in PRD section 35.
+- Browser-local role separation is for demonstration only; production requires server-side authorization and data storage.
+
+Removed from this branch: public marketing landing page, citizen flood reporting, Telegram connection/automation, citizen/community role model, legacy backend, GIS risk/3D tools, and standalone data-table navigation. Historical research and geospatial assets are retained as reference, not exposed as product features.
+
+Palette: navy `#16324F`, teal `#178C8C`, light teal `#BFE3DF`, warm white `#F7F5EF`, charcoal `#202A2E`, gray `#D9E0DE`.
