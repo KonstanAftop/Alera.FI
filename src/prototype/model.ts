@@ -9,6 +9,7 @@ export type Post = {
   availability: "active" | "stale" | "unavailable";
   threshold: number;
   forecast: boolean;
+  cctv?: { availability: "unavailable"; location: string };
 };
 export type User = {
   id: string;
@@ -17,6 +18,7 @@ export type User = {
   village: string;
   role: "Volunteer" | "Admin";
   active: boolean;
+  approval: "pending" | "approved";
   preferences: string[];
 };
 export type Knowledge = {
@@ -24,6 +26,7 @@ export type Knowledge = {
   title: string;
   text: string;
   enabled: boolean;
+  fileName?: string;
 };
 export type Activity = {
   id: string;
@@ -56,6 +59,7 @@ export type Message = {
 export const demoTime = new Date().toISOString();
 export const initialPosts: Post[] = [
   {
+    cctv: { availability: "unavailable", location: "Pos Majalaya" },
     id: "mjl",
     name: "Majalaya",
     type: "AWLR",
@@ -103,18 +107,7 @@ export const initialPosts: Post[] = [
     threshold: 20,
     forecast: false,
   },
-  {
-    id: "cam",
-    name: "Jembatan Majalaya",
-    type: "CCTV",
-    lat: -7.057,
-    lng: 107.748,
-    source: "CCTV simulasi",
-    unit: "",
-    availability: "unavailable",
-    threshold: 0,
-    forecast: false,
-  },
+
 ];
 export const initialUsers: User[] = [
   {
@@ -124,7 +117,8 @@ export const initialUsers: User[] = [
     village: "Majalaya",
     role: "Volunteer",
     active: true,
-    preferences: ["mjl", "kts", "cam"],
+    approval: "approved",
+    preferences: ["mjl", "kts"],
   },
   {
     id: "admin",
@@ -133,7 +127,8 @@ export const initialUsers: User[] = [
     village: "Majalaya",
     role: "Admin",
     active: true,
-    preferences: ["mjl", "wng", "kts", "cam"],
+    approval: "approved",
+    preferences: ["mjl", "wng", "kts"],
   },
 ];
 export const initialKnowledge: Knowledge[] = [
@@ -230,3 +225,13 @@ export function draft(posts: Post[], at: string) {
 }
 
 export function recentChange(post: Post, at: string) { const records = observations(post, at); return Math.round((records[24].value - records[16].value) * 100); }
+
+// Migrate the old demo camera into its monitoring post without discarding other posts.
+export function mergePostFacilities(posts: Post[]): Post[] {
+  const camera = posts.find((p) => p.id === "cam" && p.type === "CCTV");
+  if (!camera || !posts.some((p) => p.id === "mjl")) return posts;
+  return posts.filter((p) => p !== camera).map((p) => p.id === "mjl"
+    ? { ...p, cctv: p.cctv ?? { availability: "unavailable", location: "Pos Majalaya" } }
+    : p);
+}
+export const postTypes = (post: Post) => post.cctv ? [post.type, "CCTV"] : [post.type];

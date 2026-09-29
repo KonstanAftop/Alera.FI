@@ -18,6 +18,8 @@ import {
   Layers,
   Send,
 } from "lucide-react";
+import GuidedTour from "./prototype/GuidedTour";
+import KnowledgePanel from "./prototype/KnowledgePanel";
 import MonitoringMap from "./prototype/Map";
 import {
   Post,
@@ -38,11 +40,13 @@ import {
   explain,
   draft,
   recentChange,
+  mergePostFacilities,
+  postTypes,
 } from "./prototype/model";
-function useStored<T>(key: string, initial: T) {
+function useStored<T>(key: string, initial: T, migrate: (value: T) => T = (value) => value) {
   const [state, setState] = useState<T>(() => {
     try {
-      return JSON.parse(localStorage.getItem(key) || "null") ?? initial;
+      return migrate(JSON.parse(localStorage.getItem(key) || "null") ?? initial);
     } catch {
       return initial;
     }
@@ -64,8 +68,8 @@ const uid = () => crypto.randomUUID();
 const glossary =
   "AWLR: pencatat tinggi muka air. ARR: pencatat curah hujan. TMA: tinggi muka air pada pos, bukan kedalaman banjir. Akumulasi: total hujan dalam rentang waktu. Prakiraan: perkiraan mendatang yang mengandung ketidakpastian.";
 export default function App() {
-  const [posts, setPosts] = useStored<Post[]>("alera.posts.v1", initialPosts);
-  const [users, setUsers] = useStored<User[]>("alera.users.v1", initialUsers);
+  const [posts] = useStored<Post[]>("alera.posts.v1", initialPosts, mergePostFacilities);
+  const [users, setUsers] = useStored<User[]>("alera.users.v1", initialUsers, (saved) => saved.map((u) => ({ ...u, approval: u.approval ?? "approved", preferences: [...new Set(u.preferences.map((id) => id === "cam" ? "mjl" : id))] })));
   const [villages, setVillages] = useStored<string[]>("alera.villages.v1", [
     "Majalaya",
     "Wangisagara",
@@ -90,9 +94,10 @@ export default function App() {
     staleMinutes: 60,
   });
   const user = users.find((u) => u.id === session && u.active);
+  const canWrite = Boolean(user && (user.role === "Admin" || user.approval === "approved"));
   const [page, setPage] = useState("Monitoring");
   const [onboarding, setOnboarding] = useState(false);
-  const [scope, setScope] = useState("Pos Saya");
+  const [scope, setScope] = useState(user?.approval === "pending" ? "Semua Pos" : "Pos Saya");
   const [types, setTypes] = useState(["AWLR", "ARR", "CCTV"]);
   const [satellite, setSatellite] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
@@ -112,8 +117,31 @@ export default function App() {
   const [question, setQuestion] = useState("");
   const [adminTab, setAdminTab] = useState("Relawan");
   const [register, setRegister] = useState(false);
+  const [tourReplay, setTourReplay] = useState(0);
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const [tourMessage, setTourMessage] = useState<Message | null>(null);
+  const tourPost = posts.find((p) => p.id === "mjl") ?? posts[0];
+  const moveTour = useCallback((step: number | null) => {
+    setTourStep(step);
+    setPage("Monitoring");
+    setOpened(step !== null && [3, 4].includes(step) ? tourPost.id : null);
+    setModal(step === 3 ? "detail" : step === 5 ? "review" : step !== null && step >= 6 ? "editor" : null);
+    if (step !== null && step >= 6) {
+      const status: Message["status"] = step === 6 ? "Draft" : step === 7 ? "Ready to Share" : step === 8 ? "WhatsApp Handoff" : "Confirmed Sent";
+      setTourMessage((previous) => ({
+        ...(previous ?? {
+          id: "tour-example", userId: "tour", village: "Latihan",
+          generated: "CONTOH LATIHAN — " + draft([tourPost], at),
+          final: "CONTOH LATIHAN — " + draft([tourPost], at),
+          postIds: [tourPost.id], sources: [{ post: tourPost, observedAt: observedAt(tourPost, at), value: value(tourPost, at), forecast: forecast(tourPost, at) }],
+          createdAt: at,
+        }), status, confirmedAt: step === 9 ? at : undefined,
+      }));
+    }
+    if (step === null || step === 0) setTourMessage(null);
+  }, [tourPost, at]);
   useEffect(() => {
-    if (!opened && !modal) return;
+    if (tourStep !== null || (!opened && !modal)) return;
     const previous = document.activeElement as HTMLElement;
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     const focusable = () =>
@@ -149,17 +177,17 @@ export default function App() {
       document.removeEventListener("keydown", key);
       previous?.focus();
     };
-  }, [opened, modal]);
+  }, [opened, modal, tourStep]);
   const post = posts.find((p) => p.id === opened);
-  const message = messages.find((m) => m.id === messageId);
-  const chosen = posts.filter((p) => selected.includes(p.id));
+  const message = tourStep !== null ? tourMessage : messages.find((m) => m.id === messageId);
+  const chosen = tourStep !== null ? [tourPost] : posts.filter((p) => selected.includes(p.id));
   const log = (
     action: string,
     content = "",
     ids = selected,
     confirmedAt?: string,
   ) => {
-    if (user)
+    if (user && canWrite && tourStep === null)
       setActivities((a) => [
         {
           id: uid(),
@@ -177,15 +205,18 @@ export default function App() {
         ...a,
       ]);
   };
-  const updateUser = (patch: Partial<User>) =>
-    setUsers((us) =>
+  const updateUser = (patch: Pick<Partial<User>, "name" | "village" | "preferences">) =>
+    canWrite && setUsers((us) =>
       us.map((u) => (u.id === user?.id ? { ...u, ...patch } : u)),
     );
   const openPost = useCallback((id: string) => {
+    if (tourStep !== null) { moveTour(3); return; }
     setOpened(id);
     setExplanation(false);
-  }, []);
+  }, [tourStep, moveTour]);
   const toggleSelection = (id: string) => {
+    if (tourStep !== null) { moveTour(5); return; }
+    if (!canWrite) return;
     const ids = selected.includes(id)
       ? selected.filter((x) => x !== id)
       : [...selected, id];
@@ -193,6 +224,8 @@ export default function App() {
     log("Pilihan informasi diubah", "", ids);
   };
   const generate = () => {
+    if (tourStep !== null) { moveTour(6); return; }
+    if (!canWrite) return;
     const content = draft(chosen, at);
     const m: Message = {
       id: uid(),
@@ -216,12 +249,18 @@ export default function App() {
     setModal("editor");
     setOpened(null);
   };
-  const patchMessage = (patch: Partial<Message>) =>
-    setMessages((ms) =>
-      ms.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
-    );
+  const patchMessage = (patch: Partial<Message>) => {
+    if (tourStep !== null) {
+      setTourMessage((m) => m ? { ...m, ...patch } : m);
+      if (patch.status === "Ready to Share") moveTour(7);
+      if (patch.status === "Confirmed Sent") moveTour(9);
+      return;
+    }
+    if (canWrite) setMessages((ms) => ms.map((m) => m.id === messageId ? { ...m, ...patch } : m));
+  };
   const share = () => {
-    if (!message) return;
+    if (tourStep !== null) { moveTour(8); return; }
+    if (!canWrite || !message || message.userId !== user?.id) return;
     window.open(
       "https://wa.me/?text=" + encodeURIComponent(message.final),
       "_blank",
@@ -267,6 +306,7 @@ export default function App() {
         <label key={p.id}>
           <input
             type="checkbox"
+            disabled={!canWrite}
             checked={user?.preferences.includes(p.id) || false}
             onChange={() =>
               updateUser({
@@ -278,7 +318,7 @@ export default function App() {
           />
           <span>
             <strong>
-              {p.type} {p.name}
+              {postTypes(p).join(" + ")} {p.name}
             </strong>
             <small>
               {p.source} · {status(p, at)}
@@ -339,13 +379,17 @@ export default function App() {
                   village: String(f.get("village")),
                   role: "Volunteer",
                   active: true,
+                  approval: "pending",
                   preferences: [],
                 };
                 setUsers((us) => [...us, u]);
                 setSession(u.id);
-                setOnboarding(true);
+                setOnboarding(false);
+                setScope("Semua Pos");
               } else {
-                setSession(String(f.get("account")));
+                const account = users.find((u) => u.id === String(f.get("account")));
+                setSession(account?.id ?? null);
+                setScope(account?.approval === "pending" ? "Semua Pos" : "Pos Saya");
                 setOnboarding(false);
               }
               setNotice("");
@@ -386,7 +430,7 @@ export default function App() {
               </label>
             )}
             <button className="primary" type="submit">
-              {register ? "Lanjut pilih pos" : "Masuk ke ruang monitoring"}{" "}
+              {register ? "Daftar dan lihat monitoring" : "Masuk ke ruang monitoring"}{" "}
               <ArrowUpRight size={18} />
             </button>
           </form>
@@ -424,7 +468,7 @@ export default function App() {
       </main>
     );
   return (
-    <div className="app">
+    <div className={`app ${tourStep !== null ? "tour-running" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
           <Waves /> ALERA<span>FI</span>
@@ -446,6 +490,7 @@ export default function App() {
             return (
               <button
                 key={String(name)}
+                data-tour={String(name)}
                 className={page === name ? "active" : ""}
                 onClick={() => {
                   setPage(String(name));
@@ -472,6 +517,8 @@ export default function App() {
             aria-label="Keluar"
             onClick={() => {
               setSession(null);
+                setTourStep(null);
+                setTourMessage(null);
               setSelected([]);
               setModal(null);
               setOpened(null);
@@ -483,6 +530,12 @@ export default function App() {
         </div>
       </aside>
       <div className="workspace-main">
+        {!canWrite && (
+          <div className="approval-notice" role="status">
+            <strong>Menunggu persetujuan admin · Akses baca saja</strong>
+            <p>Anda dapat melihat monitoring, detail, dan penjelasan. Menyimpan profil atau preferensi, memilih informasi, membuat draf, dan membagikan pesan tersedia setelah admin menyetujui akun.</p>
+          </div>
+        )}
         <header>
           <div>
             <span className="eyebrow">ALERA-FI / {page.toUpperCase()}</span>
@@ -541,8 +594,8 @@ export default function App() {
                   <Camera size={17} /> Kondisi visual
                 </span>
                 <strong>
-                  {posts.filter((p) => p.type === "CCTV").length}{" "}
-                  <small>sumber CCTV</small>
+                  {posts.filter((p) => postTypes(p).includes("CCTV")).length}{" "}
+                  <small>pos dengan CCTV</small>
                 </strong>
               </div>
             </div>
@@ -585,13 +638,14 @@ export default function App() {
                 </div>
               </div>
               <MonitoringMap
+                tourSnapshot={tourStep === 2 ? tourPost.id : null}
                 posts={posts.filter(
                   (p) =>
-                    (scope === "Semua Pos" ||
+                    (tourStep !== null || scope === "Semua Pos" ||
                       user.preferences.includes(p.id)) &&
-                    types.includes(p.type),
+                    (tourStep !== null || postTypes(p).some((type) => types.includes(type))),
                 )}
-                selected={selected}
+                selected={tourStep !== null && tourStep >= 5 ? [tourPost.id] : selected}
                 at={at}
                 onOpen={openPost}
               />
@@ -609,7 +663,8 @@ export default function App() {
               )}
               <div className="map-legend">
                 <span>● Normal</span>
-                <span>● Perlu perhatian</span>
+                <span>● Waspada</span>
+                <span>● Hujan lebat</span>
                 <span>● Lama / tidak tersedia</span>
               </div>
             </section>
@@ -621,9 +676,9 @@ export default function App() {
               {posts
                 .filter(
                   (p) =>
-                    (scope === "Semua Pos" ||
+                    (tourStep !== null || scope === "Semua Pos" ||
                       user.preferences.includes(p.id)) &&
-                    types.includes(p.type),
+                    postTypes(p).some((type) => types.includes(type)),
                 )
                 .map((p) => (
                   <button
@@ -634,7 +689,7 @@ export default function App() {
                     onClick={() => openPost(p.id)}
                   >
                     <div>
-                      <span className="type-label">{p.type}</span>
+                      <span className="type-label">{postTypes(p).join(" + ")}</span>
                       {selected.includes(p.id) && <Check size={17} />}
                     </div>
                     <h3>{p.name}</h3>
@@ -644,7 +699,12 @@ export default function App() {
                     </strong>
                     <span
                       className={
-                        "status " + (p.availability !== "active" ? "muted" : "")
+                        "status " +
+                        (p.availability !== "active"
+                          ? "muted"
+                          : status(p, at) === "Normal"
+                            ? "normal"
+                            : "attention")
                       }
                     >
                       {status(p, at)}
@@ -660,7 +720,7 @@ export default function App() {
             {!posts.some(
               (p) =>
                 (scope === "Semua Pos" || user.preferences.includes(p.id)) &&
-                types.includes(p.type),
+                postTypes(p).some((type) => types.includes(type)),
             ) && (
               <div className="empty">
                 Tidak ada pos pada filter ini. Buka Semua Pos atau ubah
@@ -791,10 +851,16 @@ export default function App() {
         {page === "Account" && (
           <main className="content account">
             <section className="panel">
+              <h2>Panduan aplikasi</h2>
+              <p>Kenali peta dan alur informasi untuk warga.</p>
+              <button onClick={() => setTourReplay((n) => n + 1)}>Ulangi pengenalan</button>
+            </section>
+            <section className="panel">
               <h2>Profil relawan</h2>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
+                  if (!canWrite) return;
                   const f = new FormData(e.currentTarget);
                   updateUser({
                     name: String(f.get("name")),
@@ -805,11 +871,11 @@ export default function App() {
               >
                 <label>
                   Nama
-                  <input name="name" defaultValue={user.name} required />
+                  <input name="name" defaultValue={user.name} required disabled={!canWrite} />
                 </label>
                 <label>
                   Desa
-                  <select name="village" defaultValue={user.village}>
+                  <select name="village" defaultValue={user.village} disabled={!canWrite}>
                     {villages.map((v) => (
                       <option key={v}>{v}</option>
                     ))}
@@ -819,7 +885,7 @@ export default function App() {
                   Informasi akun
                   <input readOnly value={user.email} />
                 </label>
-                <button className="primary">Simpan profil</button>
+                <button className="primary" disabled={!canWrite}>Simpan profil</button>
               </form>
             </section>
             <section className="panel">
@@ -833,6 +899,8 @@ export default function App() {
             <button
               onClick={() => {
                 setSession(null);
+                setTourStep(null);
+                setTourMessage(null);
                 setSelected([]);
                 setModal(null);
                 setOpened(null);
@@ -849,7 +917,6 @@ export default function App() {
               {[
                 "Relawan",
                 "Desa",
-                "Sumber monitoring",
                 "Pengetahuan AI",
                 "Konfigurasi",
               ].map((t) => (
@@ -884,6 +951,7 @@ export default function App() {
                         village: String(f.get("village")),
                         role: "Volunteer",
                         active: true,
+                  approval: "pending",
                         preferences: [],
                       },
                     ]);
@@ -920,9 +988,21 @@ export default function App() {
                       <div>
                         <h3>{u.name}</h3>
                         <small>
-                          {u.email} · {u.active ? "Aktif" : "Nonaktif"}
+                          {u.email} · {u.active ? "Aktif" : "Nonaktif"} · {u.approval === "approved" ? "Disetujui" : "Menunggu persetujuan"}
                         </small>
                       </div>
+                      {u.approval === "pending" && (
+                        <button
+                          disabled={!u.active}
+                          aria-label={"Setujui akun " + u.name}
+                          onClick={() => {
+                            if (user.role !== "Admin") return;
+                            setUsers((us) => us.map((x) => x.id === u.id ? { ...x, approval: "approved" } : x));
+                            log("Akun relawan disetujui", u.name, []);
+                            setNotice(`Akun ${u.name} disetujui. Akses tulis dibuka.`);
+                          }}
+                        >Setujui akun</button>
+                      )}
                       <select
                         aria-label={"Desa " + u.name}
                         value={u.village}
@@ -995,240 +1075,8 @@ export default function App() {
                 ))}
               </>
             )}
-            {adminTab === "Sumber monitoring" && (
-              <>
-                <h2>Sumber monitoring</h2>
-                <p>
-                  Ambang batas demonstrasi, belum terverifikasi untuk penggunaan
-                  operasional.
-                </p>
-                <button
-                  onClick={() =>
-                    setPosts((ps) => [
-                      ...ps,
-                      {
-                        id: uid(),
-                        name: "Pos baru",
-                        type: "AWLR",
-                        lat: -7.06,
-                        lng: 107.76,
-                        source: "Simulasi",
-                        unit: "m",
-                        availability: "unavailable",
-                        threshold: 3,
-                        forecast: false,
-                      },
-                    ])
-                  }
-                >
-                  <Plus size={16} /> Tambah pos
-                </button>
-                {posts.map((p) => (
-                  <form
-                    className="panel source-form"
-                    key={p.id}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      setPosts((ps) =>
-                        ps.map((x) =>
-                          x.id === p.id
-                            ? {
-                                ...x,
-                                name: String(f.get("name")),
-                                type: f.get("type") as Post["type"],
-                                source: String(f.get("source")),
-                                unit: String(f.get("unit")),
-                                lat: Number(f.get("lat")),
-                                lng: Number(f.get("lng")),
-                                threshold: Number(f.get("threshold")),
-                                availability: f.get(
-                                  "availability",
-                                ) as Post["availability"],
-                                forecast: f.get("forecast") === "on",
-                              }
-                            : x,
-                        ),
-                      );
-                      setNotice("Sumber monitoring disimpan.");
-                    }}
-                  >
-                    <small>ID: {p.id}</small>
-                    <div className="form-grid">
-                      <label>
-                        Nama
-                        <input name="name" defaultValue={p.name} required />
-                      </label>
-                      <label>
-                        Tipe
-                        <select name="type" defaultValue={p.type}>
-                          {["AWLR", "ARR", "CCTV"].map((t) => (
-                            <option key={t}>{t}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Lintang
-                        <input
-                          name="lat"
-                          type="number"
-                          step="any"
-                          min="-90"
-                          max="90"
-                          defaultValue={p.lat}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Bujur
-                        <input
-                          name="lng"
-                          type="number"
-                          step="any"
-                          min="-180"
-                          max="180"
-                          defaultValue={p.lng}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Sumber
-                        <input name="source" defaultValue={p.source} required />
-                      </label>
-                      <label>
-                        Satuan
-                        <input name="unit" defaultValue={p.unit} />
-                      </label>
-                      <label>
-                        Ambang perhatian
-                        <input
-                          name="threshold"
-                          type="number"
-                          step="any"
-                          defaultValue={p.threshold}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Ketersediaan
-                        <select
-                          name="availability"
-                          defaultValue={p.availability}
-                        >
-                          <option value="active">Aktif</option>
-                          <option value="stale">Data lama</option>
-                          <option value="unavailable">Tidak tersedia</option>
-                        </select>
-                      </label>
-                    </div>
-                    <label className="check-label">
-                      <input
-                        type="checkbox"
-                        name="forecast"
-                        defaultChecked={p.forecast}
-                      />{" "}
-                      Prakiraan tersedia (AWLR)
-                    </label>
-                    <div className="actions">
-                      <button className="primary">Simpan pos</button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPosts((ps) => ps.filter((x) => x.id !== p.id));
-                          setSelected((s) => s.filter((x) => x !== p.id));
-                          setUsers((us) =>
-                            us.map((u) => ({
-                              ...u,
-                              preferences: u.preferences.filter(
-                                (x) => x !== p.id,
-                              ),
-                            })),
-                          );
-                        }}
-                      >
-                        Hapus pos
-                      </button>
-                    </div>
-                  </form>
-                ))}
-              </>
-            )}
             {adminTab === "Pengetahuan AI" && (
-              <>
-                <h2>Basis pengetahuan AI</h2>
-                <p>Materi aktif menjadi rujukan respons asisten simulasi.</p>
-                <button
-                  onClick={() =>
-                    setKnowledge((ks) => [
-                      ...ks,
-                      {
-                        id: uid(),
-                        title: "Materi baru",
-                        text: "",
-                        enabled: false,
-                      },
-                    ])
-                  }
-                >
-                  <Plus size={16} /> Tambah materi
-                </button>
-                {knowledge.map((k) => (
-                  <form
-                    key={k.id}
-                    className="panel"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      setKnowledge((ks) =>
-                        ks.map((x) =>
-                          x.id === k.id
-                            ? {
-                                ...x,
-                                title: String(f.get("title")),
-                                text: String(f.get("text")),
-                                enabled: f.get("enabled") === "on",
-                              }
-                            : x,
-                        ),
-                      );
-                      setNotice("Pengetahuan disimpan.");
-                    }}
-                  >
-                    <label>
-                      Judul
-                      <input name="title" defaultValue={k.title} required />
-                    </label>
-                    <label>
-                      Materi
-                      <textarea
-                        name="text"
-                        defaultValue={k.text}
-                        required
-                        rows={4}
-                      />
-                    </label>
-                    <label className="check-label">
-                      <input
-                        name="enabled"
-                        type="checkbox"
-                        defaultChecked={k.enabled}
-                      />{" "}
-                      Aktif sebagai rujukan
-                    </label>
-                    <div className="actions">
-                      <button className="primary">Simpan materi</button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setKnowledge((ks) => ks.filter((x) => x.id !== k.id))
-                        }
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </form>
-                ))}
-              </>
+              <KnowledgePanel knowledge={knowledge} onChange={setKnowledge} />
             )}
             {adminTab === "Konfigurasi" && (
               <section className="panel">
@@ -1287,6 +1135,7 @@ export default function App() {
           </div>
         )}
       </div>
+      <GuidedTour key={user.id} userId={user.id} replay={tourReplay} step={tourStep} onStep={moveTour} />
       {notice && (
         <div className="toast" role="status">
           {notice}
@@ -1300,7 +1149,7 @@ export default function App() {
           <section
             className="bottom-sheet"
             role="dialog"
-            aria-modal="true"
+            aria-modal={tourStep === null}
             aria-label={"Kondisi " + post.name}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1312,9 +1161,13 @@ export default function App() {
             >
               <X />
             </button>
-            <span className="eyebrow">{post.type} · PEMANTAUAN SIMULASI</span>
+            <span className="eyebrow">{postTypes(post).join(" + ")} · PEMANTAUAN SIMULASI</span>
             <h2>{post.name}</h2>
-            <span className="status">{status(post, at)}</span>
+            <span
+              className={`status ${post.availability !== "active" ? "muted" : status(post, at) === "Normal" ? "normal" : "attention"}`}
+            >
+              {status(post, at)}
+            </span>
             <p className="measurement">
               {value(post, at)?.toFixed(post.type === "AWLR" ? 2 : 0) ?? "—"}{" "}
               <small>{post.unit}</small>
@@ -1377,17 +1230,18 @@ export default function App() {
                 <small>Total dari pengamatan per 15 menit.</small>
               </>
             )}
-            {post.type === "CCTV" && (
+            {(post.cctv || post.type === "CCTV") && (
               <div className="empty">
                 <Camera />
-                <p>Feed belum tersedia</p>
+                <h3>CCTV · {post.name}</h3>
+                <p>Feed belum tersedia · pembaruan belum tersedia</p>
                 <small>
                   {post.lat}, {post.lng} · Bukan penentu status otomatis.
                 </small>
               </div>
             )}
             <div className="sheet-links">
-              <button onClick={() => setModal("detail")}>
+              <button onClick={() => tourStep !== null ? moveTour(3) : setModal("detail")}>
                 Lihat Detail <ChevronRight size={16} />
               </button>
               <button onClick={() => setExplanation(!explanation)}>
@@ -1402,6 +1256,7 @@ export default function App() {
             )}
             <button
               className="primary full"
+              disabled={!canWrite && tourStep === null}
               onClick={() => toggleSelection(post.id)}
             >
               {selected.includes(post.id) ? (
@@ -1421,7 +1276,7 @@ export default function App() {
           <section
             className="modal"
             role="dialog"
-            aria-modal="true"
+            aria-modal={tourStep === null}
             aria-label={
               modal === "editor" ? "Editor pesan" : "Informasi monitoring"
             }
@@ -1448,10 +1303,11 @@ export default function App() {
             )}
             {modal === "detail" && post && (
               <>
-                <span className="eyebrow">DETAIL POS · {post.type}</span>
+                <span className="eyebrow">DETAIL POS · {postTypes(post).join(" + ")}</span>
                 <h2>{post.name}</h2>
                 <p>{explain(post, at)}</p>
                 <dl>
+                  {post.cctv && <><dt>CCTV di pos ini</dt><dd>{post.cctv.location} · Feed belum tersedia · pembaruan belum tersedia</dd></>}
                   <dt>Sumber</dt>
                   <dd>{post.source}</dd>
                   <dt>Lokasi</dt>
@@ -1479,10 +1335,10 @@ export default function App() {
                         role="img"
                         aria-label="Grafik historis enam jam"
                       >
-                        <path d="M 15 135 H 590" stroke="#D9E0DE" />
+                        <path d="M 15 135 H 590" stroke="#DCE3E7" />
                         <polyline
                           fill="none"
-                          stroke="#178C8C"
+                          stroke="#246EAA"
                           strokeWidth="3"
                           points={observations(post, at)
                             .map(
@@ -1532,7 +1388,7 @@ export default function App() {
                       )}
                     </>
                   )}
-                <button onClick={() => setModal(null)}>
+                <button onClick={() => tourStep !== null ? moveTour(4) : setModal(null)}>
                   Kembali ke kondisi pos
                 </button>
               </>
@@ -1549,13 +1405,13 @@ export default function App() {
                   <article className="review-item" key={p.id}>
                     <div>
                       <h3>
-                        {p.type} {p.name}
+                        {postTypes(p).join(" + ")} {p.name}
                       </h3>
                       <p>{explain(p, at)}</p>
                     </div>
                     <button
                       aria-label={"Hapus " + p.name}
-                      onClick={() => toggleSelection(p.id)}
+                      onClick={() => tourStep !== null ? moveTour(4) : toggleSelection(p.id)}
                     >
                       <X size={17} />
                     </button>
@@ -1563,7 +1419,7 @@ export default function App() {
                 ))}
                 {!chosen.length && <p>Belum ada pos dipilih.</p>}
                 <div className="actions">
-                  <button onClick={() => setModal(null)}>
+                  <button onClick={() => tourStep !== null ? moveTour(4) : setModal(null)}>
                     Lanjut pilih pos
                   </button>
                   <button
@@ -1579,6 +1435,7 @@ export default function App() {
                 </small>
               </>
             )}
+            {tourStep !== null && <p className="warning">MODE LATIHAN · Tidak mengirim atau menyimpan pesan</p>}
             {modal === "editor" && message && (
               <>
                 <span className="eyebrow">02 / TINJAU & BAGIKAN</span>
@@ -1625,6 +1482,7 @@ export default function App() {
                     <div className="actions">
                       <button
                         onClick={() => {
+                          if (tourStep !== null) { moveTour(5); return; }
                           setSelected(
                             message.postIds.filter((id) =>
                               posts.some((p) => p.id === id),
@@ -1655,8 +1513,7 @@ export default function App() {
                 {message.status === "Ready to Share" && (
                   <>
                     <p>
-                      WhatsApp akan terbuka dengan pesan terisi. Pilih grup dan
-                      tekan kirim sendiri.
+                      {tourStep !== null ? "Latihan: tombol di bawah membuka konfirmasi contoh. WhatsApp tidak akan dibuka." : "WhatsApp akan terbuka dengan pesan terisi. Pilih grup dan tekan kirim sendiri."}
                     </p>
                     <button className="primary full" onClick={share}>
                       Bagikan ke WhatsApp <ArrowUpRight size={17} />
@@ -1689,7 +1546,7 @@ export default function App() {
                             message.postIds,
                             confirmedAt,
                           );
-                          setSelected([]);
+                          if (tourStep === null) setSelected([]);
                         }}
                       >
                         Ya, sudah dikirim
@@ -1700,20 +1557,20 @@ export default function App() {
                 {message.status === "Confirmed Sent" && (
                   <div className="context-box">
                     <Check />
-                    <h3>Aktivitas disimpan</h3>
+                    <h3>{tourStep !== null ? "Latihan selesai — tidak disimpan" : "Aktivitas disimpan"}</h3>
                     <p>
-                      Dikonfirmasi oleh relawan pada{" "}
+                      {tourStep !== null ? "Konfirmasi contoh pada" : "Dikonfirmasi oleh relawan pada"}{" "}
                       {time(message.confirmedAt!)}. Bukan konfirmasi penerimaan
                       WhatsApp.
                     </p>
-                    <button
+                    {tourStep === null && <button
                       onClick={() => {
                         setModal(null);
                         setPage("Activity");
                       }}
                     >
                       Lihat aktivitas
-                    </button>
+                    </button>}
                   </div>
                 )}
               </>

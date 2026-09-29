@@ -190,7 +190,23 @@ It must **not restrict access** to other monitoring posts.
 
 ---
 
-## 6.2 Monitoring Preference
+## 6.2 Account Approval
+
+New accounts start with `pending` approval and read-only access. They can log in and view all monitoring posts, snapshots, details, historical context, forecasts, and explanations. Pending accounts default to **Semua Pos**.
+
+An active Admin must explicitly approve a new account before it receives write access. Until approval, users cannot save profile or monitoring preferences, select information for dissemination, create or edit message drafts, share through the application, or confirm sending. Initial registration details are saved when the account is created. Read-only browsing, filters, and transient assistant questions remain available.
+
+Approval (`pending` / `approved`) is separate from account activation. Deactivated accounts cannot log in; reactivation does not approve a pending account. Admin-created volunteer accounts also start pending. Existing accounts retain approved access during migration.
+
+The prototype demonstrates this workflow in browser-local storage. Production must enforce authorization on the server for every write operation.
+
+## 6.3 First-login Guided Introduction
+
+On first login, show a short Indonesian guide highlighting map status colors, marker snapshots and details, monitoring filters, and account approval. Include Next, Back, Skip, and Account → Replay introduction. Store completion or skipping per account in this prototype, including for pending users; tutorial progress is a UI preference and is exempt from the write restriction.
+
+For every account, including pending accounts, use one continuous guided tour that automatically opens the real snapshot, detail, review, editor, and confirmation panels: selecting posts, reviewing/editing an example draft, simulated sharing, and explicitly confirming sending. The example never opens WhatsApp or changes approval permissions. Keep training selections and drafts in temporary state, isolated from real selections/messages. Never save sent activity or open WhatsApp from the tour. Replaying includes the sending example regardless of approval status.
+
+## 6.4 Monitoring Preference
 
 Selected monitoring posts become the user's default monitoring set.
 
