@@ -53,9 +53,9 @@ it("does not restrict all-post access to personal preferences and gates admin na
   render(<App />);
   fireEvent.click(screen.getByText("Masuk ke ruang monitoring"));
   expect(screen.queryByRole("button", { name: "Admin" })).toBeNull();
-  expect(screen.queryByRole("button", { name: /AWLR Wangisagara/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /ARR BD\. Wangisagara/ })).toBeNull();
   fireEvent.click(screen.getByText("Semua Pos"));
-  expect(screen.getByRole("button", { name: /AWLR Wangisagara/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /ARR BD\. Wangisagara/ })).toBeTruthy();
 });
 
 it("keeps CCTV and AWLR in one selectable post when filtering cameras", () => {
@@ -114,6 +114,7 @@ it("keeps new accounts read-only across reloads until an admin approves them", (
   fireEvent.click(screen.getByLabelText("Tutup kondisi"));
   fireEvent.click(screen.getByRole("button", { name: "Account" }));
   expect(screen.getByText("Simpan profil")).toBeDisabled();
+  fireEvent.click(screen.getByRole("tab", { name: "Preferensi monitoring" }));
   expect(screen.getAllByRole("checkbox").every((c) => (c as HTMLInputElement).disabled)).toBe(true);
   view.unmount();
   view = render(<App />);
@@ -163,4 +164,15 @@ it("opens real panels throughout the unified tour without giving pending users w
   fireEvent.click(screen.getByText("Semua Pos"));
   fireEvent.click(screen.getByRole("button", { name: /AWLR \+ CCTV Majalaya 3.40/ }));
   expect(screen.getByText("Pilih untuk Informasi")).toBeDisabled();
+});
+
+it("repairs the account village selector when an old list was persisted during hot reload", () => {
+  localStorage.setItem("alera.villages.v3", JSON.stringify(["Majalaya", "Wangisagara", "Sukamaju", "Majakerta"]));
+  render(<App />);
+  fireEvent.click(screen.getByText("Masuk ke ruang monitoring"));
+  fireEvent.click(screen.getByRole("button", { name: "Account" }));
+  const village = screen.getByLabelText("Desa") as HTMLSelectElement;
+  expect(village.value).toBe("hilir/Majalaya");
+  expect(Array.from(village.options).filter((o) => o.value.startsWith("hulu/"))).toHaveLength(11);
+  expect(Array.from(village.options).filter((o) => o.value.startsWith("hilir/"))).toHaveLength(8);
 });

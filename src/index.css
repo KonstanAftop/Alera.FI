@@ -547,9 +547,51 @@ header .eyebrow {
   margin-bottom: 20px;
 }
 .account {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 22px;
+  display: block;
+}
+.account-tabs {
+  margin-bottom: 20px;
+}
+.account-tabs button {
+  flex: 0 0 auto;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 20px;
+  margin-top: 5px;
+  border-top: 1px solid var(--border);
+  color: #627074;
+  font-size: 12px;
+}
+.pagination button {
+  padding: 9px 12px;
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 520px;
+  padding: 0 12px;
+  margin-bottom: 20px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.search-field svg {
+  color: #718390;
+  flex-shrink: 0;
+}
+.search-field input {
+  width: 100%;
+  border: 0;
+  padding-left: 0;
+}
+.search-field:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .choice-list label {
   display: flex;
@@ -988,9 +1030,6 @@ dd {
   }
   .summary-grid > div {
     padding: 16px;
-  }
-  .account {
-    grid-template-columns: 1fr;
   }
   .post-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -2355,7 +2394,169 @@ body:has(.guided-tour) { padding-bottom: 330px; }
 .guided-tour { max-height: calc(100dvh - 48px); overflow-y: auto; }
 @media (max-width: 760px) { .guided-tour { max-height: calc(100dvh - 110px); } }
 /* Reserve room for the guide while the real application panels are open. */
+.kb-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px; }
+.kb-heading h2 { margin: 0 0 6px; }
+.kb-heading p { margin: 0; max-width: 580px; }
+.kb-heading-icon, .kb-file-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #246eaa; background: #edf4fa; border-radius: 10px; width: 46px; height: 46px; }
+.settings-page .kb-upload-panel { padding: 16px; }
+.kb-upload { position: relative; align-items: center; text-align: center; padding: 30px 20px; border: 1px dashed #a9bfd1; border-radius: 10px; background: #f8fbfd; gap: 10px; margin: 0; cursor: pointer; }
+.kb-upload:hover { background: #f0f6fb; border-color: #246eaa; }
+.kb-upload:focus-within { outline: 3px solid #246eaa; outline-offset: 3px; }
+.kb-upload > svg { color: #246eaa; margin-bottom: 4px; }
+.kb-upload strong { font-size: 16px; color: #163f78; }
+.kb-upload > span:not(.kb-upload-button) { font-size: 13px; font-weight: 400; color: #627585; }
+.kb-upload-button { padding: 10px 18px; border-radius: 8px; color: white; background: #163f78; margin: 6px 0; }
+.kb-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.settings-page .kb-upload-panel > .kb-storage-note { font-size: 11px; margin: 12px 4px 0; color: #73818c; }
+.kb-upload-panel > form { margin-top: 24px; padding: 8px; }
+.kb-pending { padding: 12px 16px; background: #f6f8fa; border-radius: 8px; margin-top: 10px; }
+.kb-library { background: white; border: 1px solid #e0e7ed; border-radius: 14px; overflow: hidden; }
+.kb-library-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid #e8edf1; }
+.kb-library-heading h3 { margin: 0; font-size: 16px; }
+.kb-library-heading p { margin: 5px 0 0; font-size: 12px; }
+.kb-count { display: inline-block; margin-left: 6px; padding: 2px 7px; background: #edf2f6; border-radius: 6px; font-size: 12px; }
+.admin-page .kb-library-heading .search-field { margin: 0; width: 240px; min-height: 40px; flex-shrink: 0; }
+.kb-document { display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px; border-bottom: 1px solid #edf0f3; }
+.kb-document:last-child { border-bottom: 0; }
+.kb-file-icon { width: 38px; height: 42px; }
+.kb-document-body { flex: 1; min-width: 0; }
+.kb-document-body h3 { font-size: 14px; margin: 0 0 4px; }
+.kb-document-body > p { font-size: 12px; margin: 0 0 9px; }
+.kb-document > .actions { margin: 0; gap: 6px; justify-content: flex-end; }
+.kb-document > .actions button { font-size: 11px; padding: 8px 10px; background: transparent; }
+.kb-document > .actions button:last-child { color: #a15151; border-color: transparent; }
+@media (max-width: 760px) {
+  .kb-heading-icon { display: none; }
+  .kb-library-heading { flex-direction: column; align-items: stretch; padding: 18px; }
+  .admin-page .kb-library-heading .search-field { width: 100%; }
+  .kb-document { flex-wrap: wrap; padding: 18px; gap: 12px; }
+  .kb-document-body { flex-basis: calc(100% - 50px); }
+  .kb-document > .actions { width: 100%; justify-content: flex-start; padding-top: 4px; }
+  .kb-upload { padding: 24px 14px; }
+}
 .tour-running .guided-tour { z-index: 200; }
+/* Consistent settings and activity surfaces. */
+.settings-page, .activity-page {
+  max-width: 1000px;
+  padding-top: 32px;
+}
+.settings-page .tabs {
+  gap: 4px;
+  padding: 5px;
+  margin-bottom: 28px;
+  border: 1px solid #dfe7ed;
+  border-radius: 12px;
+  background: #edf2f6;
+}
+.settings-page .tabs button {
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+.settings-page .tabs button.active {
+  color: #163f78;
+  background: white;
+  box-shadow: 0 2px 5px #17365012;
+  border-color: #dfe7ed;
+}
+.settings-page .panel {
+  padding: 28px;
+  box-shadow: none;
+}
+.settings-page .panel h2 { margin-bottom: 6px; }
+.settings-page .panel > p { margin-bottom: 26px; }
+.account .panel form { max-width: 560px; }
+.account .panel form label { margin-bottom: 22px; }
+.account .panel form .primary { margin-top: 6px; min-height: 44px; }
+.account > button {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  color: #637585;
+}
+.account .choice-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.account .choice-list label {
+  margin: 0;
+  min-width: 0;
+  padding: 16px;
+  align-items: flex-start;
+}
+.account .choice-list label strong { overflow-wrap: anywhere; }
+.admin-page .search-field {
+  flex-direction: row;
+  max-width: none;
+  min-height: 48px;
+  margin: 22px 0;
+}
+.admin-page .search-field input { background: transparent; }
+.admin-page .volunteer-row {
+  padding: 22px 24px;
+  margin-bottom: 12px;
+  gap: 20px;
+}
+.volunteer-identity { min-width: 0; }
+.volunteer-identity h3 { margin-bottom: 4px; font-size: 15px; }
+.volunteer-identity > small { overflow-wrap: anywhere; font-size: 12px; }
+.volunteer-status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.access-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  background: #f0f3f6;
+  color: #607383;
+}
+.access-badge.active { color: #287053; background: #eaf5ee; }
+.access-badge.pending { color: #91641c; background: #fff5dd; }
+.management-row > .volunteer-controls {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.volunteer-controls select { max-width: 180px; font-size: 12px; }
+.volunteer-controls button { min-height: 42px; font-size: 12px; }
+.activity-page > h2 { margin-bottom: 8px; }
+.activity-page > p { max-width: 560px; margin-bottom: 26px; }
+.activity-page .activity-card {
+  padding: 18px 22px;
+  gap: 16px;
+  border: 1px solid #e0e7ed;
+  border-radius: 12px;
+  background: white;
+  margin-bottom: 10px;
+}
+.activity-body { min-width: 0; width: 100%; overflow-wrap: anywhere; }
+.activity-body h3 { font-size: 14px; margin: 4px 0; }
+.activity-body p { font-size: 12px; }
+.activity-body > small { display: block; }
+.activity-body .status { margin-top: 10px; }
+.activity-page .timeline-dot { width: 7px; height: 7px; margin-top: 7px; }
+.activity-page .pagination { border: 0; margin-top: 14px; padding-top: 8px; }
+.pagination button { min-height: 42px; }
+@media (max-width: 760px) {
+  .settings-page, .activity-page { padding: 20px 16px; }
+  .settings-page .tabs { margin-bottom: 20px; }
+  .settings-page .tabs button { padding: 10px 12px; font-size: 12px; }
+  .settings-page .panel { padding: 20px; }
+  .account .choice-list { grid-template-columns: minmax(0, 1fr); }
+  .admin-page .volunteer-row { align-items: stretch; gap: 16px; }
+  .management-row > .volunteer-controls {
+    flex-basis: 100%;
+    padding-top: 14px;
+    border-top: 1px solid #edf0f3;
+  }
+  .volunteer-controls select { flex: 1; max-width: none; }
+  .activity-page .activity-card { padding: 16px; }
+  .pagination { gap: 6px; font-size: 11px; }
+  .pagination button { padding: 9px; font-size: 11px; }
+}
 .tour-running .modal-backdrop, .tour-running .sheet-backdrop { padding-right: 420px; }
 .tour-running .modal, .tour-running .bottom-sheet { max-height: calc(100dvh - 48px); overflow-y: auto; }
 @media (max-width: 760px) {
@@ -2363,3 +2564,16 @@ body:has(.guided-tour) { padding-bottom: 330px; }
   .tour-running .modal, .tour-running .bottom-sheet { max-height: calc(100dvh - 310px); }
   .tour-running .guided-tour { bottom: 12px; max-height: 265px; }
 }
+
+.water-forecast { margin-top: 20px; min-width: 0; }
+.water-forecast h3 { margin-bottom: 4px; }
+.water-forecast .forecast-caption { margin: 0 0 12px; font-size: 12px; color: #526477; }
+.forecast-key { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; font-size: 12px; }
+.forecast-key span:first-child { color: #176b87; }
+.forecast-key span:last-child { color: #854700; }
+.water-forecast svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+.water-forecast svg text { font: 11px system-ui, sans-serif; fill: #526477; }
+.water-forecast .forecast-result { margin: 0 0 6px; font-size: 13px; }
+.water-forecast > small { color: #526477; font-size: 11px; }
+.water-forecast details { margin-top: 12px; font-size: 12px; }
+.water-forecast summary { cursor: pointer; }

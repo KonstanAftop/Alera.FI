@@ -17,7 +17,10 @@ import {
   Camera,
   Layers,
   Send,
+  Search,
 } from "lucide-react";
+import { initialVillages, normalizeVillage, migrateVillages } from "./prototype/villages";
+import ForecastChart from "./prototype/ForecastChart";
 import GuidedTour from "./prototype/GuidedTour";
 import KnowledgePanel from "./prototype/KnowledgePanel";
 import MonitoringMap from "./prototype/Map";
@@ -40,7 +43,7 @@ import {
   explain,
   draft,
   recentChange,
-  mergePostFacilities,
+  migratePosts,
   postTypes,
 } from "./prototype/model";
 function useStored<T>(key: string, initial: T, migrate: (value: T) => T = (value) => value) {
@@ -68,14 +71,15 @@ const uid = () => crypto.randomUUID();
 const glossary =
   "AWLR: pencatat tinggi muka air. ARR: pencatat curah hujan. TMA: tinggi muka air pada pos, bukan kedalaman banjir. Akumulasi: total hujan dalam rentang waktu. Prakiraan: perkiraan mendatang yang mengandung ketidakpastian.";
 export default function App() {
-  const [posts] = useStored<Post[]>("alera.posts.v1", initialPosts, mergePostFacilities);
-  const [users, setUsers] = useStored<User[]>("alera.users.v1", initialUsers, (saved) => saved.map((u) => ({ ...u, approval: u.approval ?? "approved", preferences: [...new Set(u.preferences.map((id) => id === "cam" ? "mjl" : id))] })));
-  const [villages, setVillages] = useStored<string[]>("alera.villages.v1", [
-    "Majalaya",
-    "Wangisagara",
-    "Sukamaju",
-    "Majakerta",
-  ]);
+  const [posts] = useStored<Post[]>("alera.posts.v1", initialPosts, migratePosts);
+  const [users, setUsers] = useStored<User[]>("alera.users.v1", initialUsers, (saved) => saved.map((u) => ({ ...u, village: normalizeVillage(u.village), approval: u.approval ?? "approved", preferences: [...new Set(u.preferences.map((id) => ({ cam: "mjl", kts: "kertasari", wng: "wangisagara" }[id] ?? id)))] })));
+  const [villages, setVillages] = useStored<string[]>("alera.villages.v3", (() => {
+    try {
+      return migrateVillages(JSON.parse(localStorage.getItem("alera.villages.v2") || localStorage.getItem("alera.villages.v1") || "[]"));
+    } catch {
+      return initialVillages;
+    }
+  })(), (saved) => saved.some((v) => normalizeVillage(v) !== v) ? migrateVillages(saved) : saved);
   const [knowledge, setKnowledge] = useStored<Knowledge[]>(
     "alera.knowledge.v1",
     initialKnowledge,
@@ -90,9 +94,6 @@ export default function App() {
     "alera.session.v1",
     null,
   );
-  const [config, setConfig] = useStored("alera.config.v1", {
-    staleMinutes: 60,
-  });
   const user = users.find((u) => u.id === session && u.active);
   const canWrite = Boolean(user && (user.role === "Admin" || user.approval === "approved"));
   const [page, setPage] = useState("Monitoring");
@@ -116,6 +117,9 @@ export default function App() {
   >([]);
   const [question, setQuestion] = useState("");
   const [adminTab, setAdminTab] = useState("Relawan");
+  const [accountTab, setAccountTab] = useState("Profil");
+  const [activityPage, setActivityPage] = useState(1);
+  const [volunteerQuery, setVolunteerQuery] = useState("");
   const [register, setRegister] = useState(false);
   const [tourReplay, setTourReplay] = useState(0);
   const [tourStep, setTourStep] = useState<number | null>(null);
@@ -730,7 +734,7 @@ export default function App() {
           </main>
         )}
         {page === "Activity" && (
-          <main className="content">
+          <main className="content activity-page">
             <h2>
               {user.role === "Admin"
                 ? "Aktivitas seluruh relawan"
@@ -740,48 +744,32 @@ export default function App() {
               Konfirmasi pengiriman berasal dari relawan, bukan bukti pesan
               diterima WhatsApp.
             </p>
-            {messages
-              .filter(
-                (m) => m.userId === user.id && m.status !== "Confirmed Sent",
-              )
-              .map((m) => (
-                <button
-                  className="resume"
-                  key={m.id}
-                  onClick={() => {
-                    setMessageId(m.id);
-                    setSelected(m.postIds);
-                    setModal("editor");
-                  }}
-                >
-                  Lanjutkan pesan · {m.status} <ChevronRight size={18} />
-                </button>
-              ))}
-            {!activities.some(
-              (a) => user.role === "Admin" || a.userId === user.id,
-            ) && (
+            {(() => {
+              const visibleActivities = activities.filter(
+                (a) => user.role === "Admin" || a.userId === user.id,
+              );
+              const pageSize = 6;
+              const pageCount = Math.max(1, Math.ceil(visibleActivities.length / pageSize));
+              const currentPage = Math.min(activityPage, pageCount);
+              const pageActivities = visibleActivities.slice(
+                (currentPage - 1) * pageSize,
+                currentPage * pageSize,
+              );
+              return visibleActivities.length === 0 ? (
               <div className="empty">
                 Belum ada aktivitas. Pilih pos pada peta untuk mulai.
               </div>
-            )}
-            {activities
-              .filter((a) => user.role === "Admin" || a.userId === user.id)
-              .map((a) => (
+              ) : <>
+                {pageActivities.map((a) => (
                 <article className="activity-card" key={a.id}>
                   <span className="timeline-dot" />
-                  <div>
+                  <div className="activity-body">
                     <small>{time(a.at)}</small>
                     <h3>{a.action}</h3>
                     <p>
                       {a.user} · {a.village}
                     </p>
                     <small>{a.posts.join(" · ")}</small>
-                    {a.message && (
-                      <details>
-                        <summary>Lihat isi pesan</summary>
-                        <p className="prewrap">{a.message}</p>
-                      </details>
-                    )}
                     {a.confirmedAt && (
                       <span className="status">
                         Dikonfirmasi relawan · {time(a.confirmedAt)}
@@ -789,7 +777,22 @@ export default function App() {
                     )}
                   </div>
                 </article>
-              ))}
+                ))}
+                {pageCount > 1 && (
+                  <div className="pagination" aria-label="Pagination aktivitas">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setActivityPage((p) => Math.max(1, p - 1))}
+                    >Sebelumnya</button>
+                    <span>Halaman {currentPage} dari {pageCount}</span>
+                    <button
+                      disabled={currentPage === pageCount}
+                      onClick={() => setActivityPage((p) => Math.min(pageCount, p + 1))}
+                    >Berikutnya</button>
+                  </div>
+                )}
+              </>;
+            })()}
           </main>
         )}
         {page === "AI Assistant" && (
@@ -849,14 +852,21 @@ export default function App() {
           </main>
         )}
         {page === "Account" && (
-          <main className="content account">
-            <section className="panel">
-              <h2>Panduan aplikasi</h2>
-              <p>Kenali peta dan alur informasi untuk warga.</p>
-              <button onClick={() => setTourReplay((n) => n + 1)}>Ulangi pengenalan</button>
-            </section>
-            <section className="panel">
+          <main className="content account settings-page">
+            <div className="tabs account-tabs" role="tablist" aria-label="Pengaturan akun">
+              {["Profil", "Preferensi monitoring", "Panduan aplikasi"].map((tab) => (
+                <button
+                  key={tab}
+                  role="tab"
+                  aria-selected={accountTab === tab}
+                  className={accountTab === tab ? "active" : ""}
+                  onClick={() => setAccountTab(tab)}
+                >{tab}</button>
+              ))}
+            </div>
+            {accountTab === "Profil" && <section className="panel">
               <h2>Profil relawan</h2>
+              <p>Kelola identitas dan desa tempat Anda bertugas.</p>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -887,15 +897,20 @@ export default function App() {
                 </label>
                 <button className="primary" disabled={!canWrite}>Simpan profil</button>
               </form>
-            </section>
-            <section className="panel">
+            </section>}
+            {accountTab === "Preferensi monitoring" && <section className="panel">
               <h2>Preferensi monitoring</h2>
               <p>
                 Tersimpan otomatis untuk Pos Saya. Semua pos tetap dapat
                 diakses.
               </p>
               {preferences}
-            </section>
+            </section>}
+            {accountTab === "Panduan aplikasi" && <section className="panel">
+              <h2>Panduan aplikasi</h2>
+              <p>Kenali peta dan alur informasi untuk warga.</p>
+              <button onClick={() => setTourReplay((n) => n + 1)}>Ulangi pengenalan</button>
+            </section>}
             <button
               onClick={() => {
                 setSession(null);
@@ -912,13 +927,12 @@ export default function App() {
           </main>
         )}
         {page === "Admin" && user.role === "Admin" && (
-          <main className="content">
+          <main className="content admin-page settings-page">
             <div className="tabs">
               {[
                 "Relawan",
                 "Desa",
                 "Pengetahuan AI",
-                "Konfigurasi",
               ].map((t) => (
                 <button
                   className={adminTab === t ? "active" : ""}
@@ -932,65 +946,30 @@ export default function App() {
             {adminTab === "Relawan" && (
               <>
                 <h2>Kelola relawan</h2>
-                <form
-                  className="panel admin-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const f = new FormData(e.currentTarget);
-                    const email = String(f.get("email"));
-                    if (users.some((u) => u.email === email)) {
-                      setNotice("Email sudah digunakan.");
-                      return;
-                    }
-                    setUsers((us) => [
-                      ...us,
-                      {
-                        id: uid(),
-                        name: String(f.get("name")),
-                        email,
-                        village: String(f.get("village")),
-                        role: "Volunteer",
-                        active: true,
-                  approval: "pending",
-                        preferences: [],
-                      },
-                    ]);
-                    e.currentTarget.reset();
-                    setNotice(
-                      "Akun demo dibuat. Tidak ada undangan email yang dikirim.",
-                    );
-                  }}
-                >
-                  <label>
-                    Nama
-                    <input name="name" required />
-                  </label>
-                  <label>
-                    Email
-                    <input name="email" type="email" required />
-                  </label>
-                  <label>
-                    Desa
-                    <select name="village">
-                      {villages.map((v) => (
-                        <option key={v}>{v}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <button className="primary">
-                    <Plus size={16} /> Buat relawan
-                  </button>
-                </form>
+                <p>Cari relawan terdaftar dan kelola akses akun mereka.</p>
+                <label className="search-field">
+                  <Search size={17} aria-hidden="true" />
+                  <input
+                    aria-label="Cari relawan"
+                    placeholder="Cari nama, email, atau desa"
+                    value={volunteerQuery}
+                    onChange={(e) => setVolunteerQuery(e.target.value)}
+                  />
+                </label>
                 {users
                   .filter((u) => u.role === "Volunteer")
+                  .filter((u) => `${u.name} ${u.email} ${u.village}`.toLowerCase().includes(volunteerQuery.toLowerCase().trim()))
                   .map((u) => (
-                    <article className="panel management-row" key={u.id}>
-                      <div>
+                    <article className="panel management-row volunteer-row" key={u.id}>
+                      <div className="volunteer-identity">
                         <h3>{u.name}</h3>
-                        <small>
-                          {u.email} · {u.active ? "Aktif" : "Nonaktif"} · {u.approval === "approved" ? "Disetujui" : "Menunggu persetujuan"}
-                        </small>
+                        <small>{u.email}</small>
+                        <div className="volunteer-status">
+                          <span className={u.active ? "access-badge active" : "access-badge"}>{u.active ? "Aktif" : "Nonaktif"}</span>
+                          <span className={u.approval === "pending" ? "access-badge pending" : "access-badge"}>{u.approval === "approved" ? "Disetujui" : "Menunggu persetujuan"}</span>
+                        </div>
                       </div>
+                      <div className="volunteer-controls">
                       {u.approval === "pending" && (
                         <button
                           disabled={!u.active}
@@ -1031,8 +1010,12 @@ export default function App() {
                       >
                         {u.active ? "Nonaktifkan" : "Aktifkan"}
                       </button>
+                      </div>
                     </article>
                   ))}
+                {!users.some((u) => u.role === "Volunteer" && `${u.name} ${u.email} ${u.village}`.toLowerCase().includes(volunteerQuery.toLowerCase().trim())) && (
+                  <div className="empty">Tidak ada relawan yang cocok. Coba nama, email, atau desa lain.</div>
+                )}
               </>
             )}
             {adminTab === "Desa" && (
@@ -1043,12 +1026,17 @@ export default function App() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const f = new FormData(e.currentTarget);
-                    const v = String(f.get("name")).trim();
+                    const name = String(f.get("name")).trim();
+                    const v = name ? `${String(f.get("region"))}/${name.replace(/^(hulu|hilir)\//i, "")}` : "";
                     if (v && !villages.includes(v))
                       setVillages((vs) => [...vs, v]);
                     e.currentTarget.reset();
                   }}
                 >
+                  <select name="region" aria-label="Wilayah desa">
+                    <option value="hulu">Hulu</option>
+                    <option value="hilir">Hilir</option>
+                  </select>
                   <input
                     name="name"
                     aria-label="Nama desa"
@@ -1077,35 +1065,6 @@ export default function App() {
             )}
             {adminTab === "Pengetahuan AI" && (
               <KnowledgePanel knowledge={knowledge} onChange={setKnowledge} />
-            )}
-            {adminTab === "Konfigurasi" && (
-              <section className="panel">
-                <h2>Konfigurasi demonstrasi</h2>
-                <label>
-                  Batas usia data (menit)
-                  <input
-                    type="number"
-                    min="1"
-                    value={config.staleMinutes}
-                    onChange={(e) =>
-                      setConfig({
-                        staleMinutes: Math.max(1, Number(e.target.value)),
-                      })
-                    }
-                  />
-                </label>
-                <p>
-                  Digunakan pada keterangan usia snapshot. Ambang operasional,
-                  polling, model prakiraan, dan penyedia AI belum ditetapkan.
-                </p>
-                <p>
-                  Snapshot{" "}
-                  {Date.now() - Date.parse(at) > config.staleMinutes * 60000
-                    ? "melewati batas usia konfigurasi"
-                    : "masih dalam batas usia konfigurasi"}
-                  ; seluruh data tetap simulasi.
-                </p>
-              </section>
             )}
           </main>
         )}
@@ -1191,25 +1150,7 @@ export default function App() {
                     Tren meningkat sejak {time(observations(post, at)[0].at)}
                   </small>
                 </div>
-                {forecast(post, at).length > 0 && (
-                  <>
-                    <h3>Prakiraan tinggi air</h3>
-                    <div className="forecast-grid">
-                      {forecast(post, at).map((v, i) => (
-                        <div key={i}>
-                          <small>+{i + 2} jam</small>
-                          <strong>{v.toFixed(2)} m</strong>
-                          <small>
-                            {v >= post.threshold ? "Waspada" : "Normal"}
-                          </small>
-                        </div>
-                      ))}
-                    </div>
-                    <small>
-                      Simulasi prakiraan, bukan pengamatan saat ini.
-                    </small>
-                  </>
-                )}
+                <ForecastChart post={post} at={at} />
               </>
             )}
             {post.type === "ARR" && post.availability === "active" && (
@@ -1310,6 +1251,10 @@ export default function App() {
                   {post.cctv && <><dt>CCTV di pos ini</dt><dd>{post.cctv.location} · Feed belum tersedia · pembaruan belum tersedia</dd></>}
                   <dt>Sumber</dt>
                   <dd>{post.source}</dd>
+                  <dt>ID sensor</dt>
+                  <dd>{post.sensorId}</dd>
+                  <dt>Elevasi</dt>
+                  <dd>{post.elevation} mdpl</dd>
                   <dt>Lokasi</dt>
                   <dd>
                     {post.lat}, {post.lng}
@@ -1369,23 +1314,7 @@ export default function App() {
                           </tbody>
                         </table>
                       </details>
-                      {forecast(post, at).length > 0 && (
-                        <>
-                          <h3>Prakiraan · dibuat {time(at)}</h3>
-                          {forecast(post, at).map((v, i) => (
-                            <p key={i}>
-                              +{i + 2} jam (
-                              {time(
-                                new Date(
-                                  Date.parse(at) + (i + 2) * 3600000,
-                                ).toISOString(),
-                              )}
-                              ): {v.toFixed(2)} m ·{" "}
-                              {v >= post.threshold ? "Waspada" : "Normal"}
-                            </p>
-                          ))}
-                        </>
-                      )}
+                      <ForecastChart post={post} at={at} />
                     </>
                   )}
                 <button onClick={() => tourStep !== null ? moveTour(4) : setModal(null)}>
@@ -1470,7 +1399,7 @@ export default function App() {
                       {time(s.observedAt)}
                       <br />
                       {s.forecast.length > 0 &&
-                        `Prakiraan +2 / +3 / +4 jam: ${s.forecast.map((v) => v.toFixed(2) + " m").join(" / ")}`}
+                        `Prakiraan ${s.forecast.length === 12 ? "10–120 menit (interval 10 menit)" : "+2 / +3 / +4 jam (arsip)"}: ${s.forecast.map((v) => v.toFixed(2) + " m").join(" / ")}`}
                     </p>
                   ))}
                 </details>

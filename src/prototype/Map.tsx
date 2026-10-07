@@ -55,9 +55,9 @@ export default function MonitoringMap({
     map.current.on("load", () => {
       const current = map.current;
       if (!current) return;
-      current.fitBounds([[107.675, -7.17], [107.77, -7.02]], {
+      current.fitBounds([[107.66, -7.21], [107.82, -7.02]], {
         padding: { top: 95, bottom: 65, left: 75, right: 80 },
-        maxZoom: 11,
+        maxZoom: 10.5,
         duration: 0,
       });
       current.addSource("local-rivers", {

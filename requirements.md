@@ -6,7 +6,7 @@
 
 1. Memantau kondisi hidrometeorologi.
 2. Memahami perubahan kondisi melalui historical context.
-3. Melihat forecast tinggi muka air 2–4 jam ke depan.
+3. Melihat forecast tinggi muka air 2 jam ke depan dengan interval 10 menit.
 4. Memilih data monitoring yang relevan.
 5. Mengubah data teknis menjadi informasi kewaspadaan yang mudah dipahami warga menggunakan AI.
 6. Membagikan informasi tersebut ke WhatsApp.
@@ -354,14 +354,16 @@ Where forecast is available for an AWLR target, the bottom sheet must show:
 
 Forecast horizon:
 
-**2–4 hours ahead.**
+**Next 2 hours, at 10-minute intervals (12 forecast points).**
+
+Display a simple line chart with a current-observation anchor and the station-specific Waspada threshold as a labeled dashed line. Keep simulation labeling visible.
 
 Example:
 
 ```text
-Now       +2h       +3h       +4h
+Now       +10m      +20m      …      +120m
 
-3.4 m →   3.8 m →   4.2 m →   4.5 m
+3.40 m →  3.43 m →  3.47 m →  …      3.80 m
 ```
 
 The prediction model primarily forecasts **water level**.
@@ -376,7 +378,7 @@ Example:
 NOW
 Normal
 
-FORECAST +4H
+FORECAST +2H
 Siaga
 ```
 
@@ -517,7 +519,7 @@ AWLR Majalaya
 Current TMA: 3.4 m
 Change: +45 cm / 2h
 Status: Waspada
-Forecast +4h: 4.4 m
+Forecast +2h: 3.8 m
 ```
 
 AI generates a plain-language explanation.
@@ -644,7 +646,7 @@ AWLR Majalaya
 Current: 3.4 m
 Status: Waspada
 Change: +45 cm / 2h
-Forecast +4h: 4.5 m
+Forecast +2h: 3.8 m
 
 ARR Kertasari
 Current: 32 mm/h
@@ -1004,7 +1006,7 @@ System must derive recent monitoring context from historical observations where 
 System must calculate rolling rainfall accumulation from timestamped ARR observations.
 
 ### FR-10 Water-Level Forecast
-System must display water-level forecasts for supported target stations with a horizon of approximately 2–4 hours.
+System must display water-level forecasts for supported target stations with a horizon of 2 hours at 10-minute intervals.
 
 ### FR-11 Observation vs Forecast
 System must clearly distinguish current observations from predicted values.

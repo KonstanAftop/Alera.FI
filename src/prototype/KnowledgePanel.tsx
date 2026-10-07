@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UploadCloud, FileText, BookOpen, Search } from "lucide-react";
 import type { Knowledge } from "./model";
 
 type Props = {
@@ -11,13 +12,24 @@ export default function KnowledgePanel({ knowledge, onChange }: Props) {
   const [reading, setReading] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
-  return <>
+  const [query, setQuery] = useState("");
+  const documents = knowledge.filter((item) => `${item.title} ${item.fileName ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()));
+  return <div className="knowledge-base">
+    <div className="kb-heading">
+    <span className="kb-heading-icon"><BookOpen size={24} /></span>
+    <div>
     <h2>Basis pengetahuan AI</h2>
-    <p>Unggah dokumen untuk menjadi rujukan asisten.</p>
-    <section className="panel">
-      <label>
-        Unggah file
-        <input type="file" multiple accept=".txt,.md,text/plain,text/markdown" disabled={reading} onChange={async (event) => {
+    <p>Kelola dokumen yang digunakan AI sebagai sumber referensi saat menjawab pertanyaan.</p>
+    </div>
+    </div>
+    <section className="panel kb-upload-panel">
+      <label className="kb-upload">
+        <UploadCloud size={30} aria-hidden="true" />
+        <strong>Tambahkan dokumen pengetahuan</strong>
+        <span>Unggah panduan, SOP, atau materi pemantauan untuk referensi AI.</span>
+        <span className="kb-upload-button">Unggah file</span>
+        <small>TXT atau Markdown · Maks. 200 KB per file · Bisa pilih beberapa file</small>
+        <input aria-label="Unggah file" type="file" multiple accept=".txt,.md,text/plain,text/markdown" disabled={reading} onChange={async (event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           if (!files.length) return;
@@ -41,7 +53,7 @@ export default function KnowledgePanel({ knowledge, onChange }: Props) {
           }
         }} />
       </label>
-      <small>TXT / Markdown · Maks. 200 KB per file · Tersimpan di browser ini</small>
+      <p className="kb-storage-note">Mode demo: dokumen disimpan di browser ini. Pengindeksan RAG belum terhubung.</p>
       {reading && <p role="status">Membaca file…</p>}
       {error && <p role="alert">{error}</p>}
       {pending.length > 0 && <form onSubmit={(event) => {
@@ -54,7 +66,9 @@ export default function KnowledgePanel({ knowledge, onChange }: Props) {
         setPending([]);
         setError("");
       }}>
-        {pending.map((item) => <div key={item.id}>
+        <h3>Tinjau sebelum menyimpan</h3>
+        <p>Sesuaikan judul agar dokumen mudah dikenali.</p>
+        {pending.map((item) => <div className="kb-pending" key={item.id}>
           <p style={{ overflowWrap: "anywhere" }}>{item.fileName}</p>
           <label>Judul
             <input required value={item.title} onChange={(event) => setPending((items) => items.map((x) => x.id === item.id ? { ...x, title: event.target.value } : x))} />
@@ -66,8 +80,16 @@ export default function KnowledgePanel({ knowledge, onChange }: Props) {
         </div>
       </form>}
     </section>
-    <h3>Dokumen rujukan ({knowledge.length})</h3>
-    {knowledge.map((item) => <section className="panel" key={item.id}>
+    <section className="kb-library">
+    <div className="kb-library-heading">
+      <div><h3>Dokumen rujukan <span className="kb-count">{knowledge.length}</span></h3>
+      <p>{knowledge.filter((item) => item.enabled).length} dokumen aktif sebagai referensi AI</p></div>
+      <label className="search-field"><Search size={16} aria-hidden="true" /><input aria-label="Cari dokumen" placeholder="Cari dokumen…" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+    </div>
+    {documents.length === 0 && <div className="empty">{knowledge.length ? "Dokumen tidak ditemukan. Coba kata kunci lain." : "Belum ada dokumen. Unggah dokumen pertama untuk menambahkan referensi AI."}</div>}
+    {documents.map((item) => <section className="kb-document" key={item.id}>
+      <span className="kb-file-icon"><FileText size={21} aria-hidden="true" /></span>
+      <div className="kb-document-body">
       {editing === item.id ? <form onSubmit={(event) => {
         event.preventDefault();
         const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
@@ -79,12 +101,14 @@ export default function KnowledgePanel({ knowledge, onChange }: Props) {
         <div className="actions"><button>Simpan judul</button><button type="button" onClick={() => setEditing(null)}>Batal</button></div>
       </form> : <h3 style={{ overflowWrap: "anywhere" }}>{item.title}</h3>}
       <p style={{ overflowWrap: "anywhere" }}>{item.fileName ?? "Rujukan bawaan"}</p>
+      <span className={item.enabled ? "access-badge active" : "access-badge"}>{item.enabled ? "Aktif sebagai rujukan" : "Tidak aktif"}</span>
+      </div>
       <div className="actions">
         <button onClick={() => setEditing(item.id)}>Ubah judul</button>
         <button aria-label={`${item.enabled ? "Nonaktifkan" : "Aktifkan"} ${item.title}`} onClick={() => onChange((items) => items.map((x) => x.id === item.id ? { ...x, enabled: !x.enabled } : x))}>{item.enabled ? "Nonaktifkan" : "Aktifkan"}</button>
         <button aria-label={`Hapus ${item.title}`} onClick={() => onChange((items) => items.filter((x) => x.id !== item.id))}>Hapus</button>
       </div>
-      <small>{item.enabled ? "Aktif sebagai rujukan" : "Tidak aktif"}</small>
     </section>)}
-  </>;
+    </section>
+  </div>;
 }
